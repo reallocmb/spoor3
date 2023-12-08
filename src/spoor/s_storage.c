@@ -1,0 +1,340 @@
+#include"spoor_internal.h"
+#include"../redbas/redbas.h"
+
+#include<stdio.h>
+#include<string.h>
+#include<dirent.h>
+
+void storage_db_path_clean(SpoorObject *spoor_object, char *db_path_clean)
+{
+    if (spoor_object->deadline.end.year == -1)
+    {
+        strcpy(db_path_clean, "000000");
+    }
+    else
+    {
+        uint32_t year = spoor_object->deadline.end.year + 1900;
+        db_path_clean[3] = year % 10 + 0x30;
+        year /= 10;
+        db_path_clean[2] = year % 10 + 0x30;
+        year /= 10;
+        db_path_clean[1] = year % 10 + 0x30;
+        year /= 10;
+        db_path_clean[0] = year % 10 + 0x30;
+
+        if (spoor_object->deadline.end.mon + 1 < 10)
+        {
+            db_path_clean[4] = '0';
+            db_path_clean[5] = spoor_object->deadline.end.mon + 1 + 0x30;
+        }
+        else
+        {
+            db_path_clean[4] = (spoor_object->deadline.end.mon + 1) / 10 + 0x30;
+            db_path_clean[5] = (spoor_object->deadline.end.mon + 1) % 10 + 0x30;
+        }
+    }
+
+    db_path_clean[6] = 0;
+}
+
+void storage_db_path(SpoorObject *spoor_object, char *db_path)
+{
+    storage_db_path_clean(spoor_object, db_path);
+    strcpy(db_path + 6, ".rdb");
+    db_path[10] = 0;
+}
+
+uint32_t spoor_storage_link_space_free_index(RedbasDB *db)
+{
+    uint32_t items = redbas_db_items(db);
+    SpoorLink spoor_object;
+    uint32_t i;
+    for (i = 0; i < items; i++)
+    {
+        redbas_db_restore_cursor_set(db, i);
+        redbas_db_restore(db, &spoor_object, sizeof(spoor_object));
+
+        if (spoor_object.id == SPOOR_OBJECT_DELETED_ID)
+            break;
+    }
+
+    return i;
+}
+
+uint32_t spoor_storage_space_free_index(RedbasDB *db)
+{
+    uint32_t items = redbas_db_items(db);
+    SpoorObject spoor_object;
+    uint32_t i;
+    for (i = 0; i < items; i++)
+    {
+        redbas_db_restore_cursor_set(db, i);
+        redbas_db_restore(db, &spoor_object, sizeof(spoor_object));
+
+        if (spoor_object.id == SPOOR_OBJECT_DELETED_ID)
+            break;
+    }
+
+    return i;
+}
+
+void spoor_storage_save(SpoorObject *spoor_objects, SpoorObject *spoor_object)
+{
+    char location[11];
+    RedbasDB *db_spoor_object;
+    RedbasDB *db_spoor_object_parent;
+    RedbasDB *db_links;
+
+    SpoorObject *spoor_object_parent;
+
+    storage_db_path(spoor_object, location);
+    db_spoor_object = redbas_db_open(location, sizeof(*spoor_object));
+    spoor_object->id = spoor_storage_space_free_index(db_spoor_object);
+
+    if (spoor_object->id_link != SPOOR_OBJECT_NO_LINK) /* ip_link has the index of the parent object */
+    {
+        /*assign parent */
+        spoor_object_parent = &spoor_objects[spoor_object->id_link];
+
+        /* link_global set */
+
+        storage_db_path(spoor_object, location);
+        strcpy(link_global.location_child, location);
+        link_global.id_child = spoor_object->id;
+
+        storage_db_path(spoor_object_parent, location);
+        strcpy(link_global.location_parent, location);
+        link_global.id_parent = spoor_object_parent->id;
+
+        db_links = redbas_db_open("links", sizeof(link_global));
+        link_global.id = spoor_storage_link_space_free_index(db_links);
+
+        /* check if spoor_object_parent has no link */
+        if (spoor_object_parent->id_link == SPOOR_OBJECT_NO_LINK)
+        {
+            link_global.id_prev = SPOOR_OBJECT_NO_LINK;
+            link_global.id_next = SPOOR_OBJECT_NO_LINK;
+            spoor_object_parent->id_link = link_global.id;
+        }
+        else
+        {
+            SpoorLink link_parent_old;
+            redbas_db_restore_cursor_set(db_links, spoor_object_parent->id_link);
+            redbas_db_restore(db_links, &link_parent_old, sizeof(link_parent_old));
+            link_parent_old.id_prev = link_global.id;
+            redbas_db_change(db_links, &link_parent_old, sizeof(link_parent_old), link_parent_old.id);
+
+            link_global.id_next = spoor_object_parent->id_link;
+            spoor_object_parent->id_link = link_global.id;
+        }
+
+        /* link_global store */
+        if (link_global.id == redbas_db_items(db_links))
+            redbas_db_store(db_links, &link_global, sizeof(link_global));
+        else
+            redbas_db_change(db_links, &link_global, sizeof(link_global), link_global.id);
+
+
+        redbas_db_close(db_links);
+
+        /* spoor_object_parent store */
+        storage_db_path(spoor_object_parent, location);
+        db_spoor_object_parent = redbas_db_open(location, sizeof(*spoor_object_parent));
+        redbas_db_change(db_spoor_object_parent,
+                         spoor_object_parent,
+                         sizeof(*spoor_object_parent),
+                         spoor_object_parent->id);
+
+        redbas_db_close(db_spoor_object_parent);
+
+
+        /* reference spoor_object to links id */
+        strcpy(spoor_object->parent_title, spoor_object_parent->title);
+        spoor_object->id_link = link_global.id;
+    }
+
+
+    if (spoor_object->id == redbas_db_items(db_spoor_object))
+        redbas_db_store(db_spoor_object, spoor_object, sizeof(*spoor_object));
+    else
+        redbas_db_change(db_spoor_object, spoor_object, sizeof(*spoor_object), spoor_object->id);
+    redbas_db_close(db_spoor_object);
+
+}
+
+uint32_t spoor_object_storage_load(SpoorObject *spoor_objects, SpoorFilter *spoor_filter)
+{
+    DIR *dir = opendir(".");
+    struct dirent *ptr;
+    uint32_t i;
+    uint32_t items_total = 0;
+    while ((ptr = readdir(dir)) != NULL)
+    {
+        if (strncmp(ptr->d_name + 6, ".rdb", 3) == 0)
+        {
+            RedbasDB *db = redbas_db_open(ptr->d_name, sizeof(*spoor_objects));
+            uint32_t items = redbas_db_items(db);
+            for (i = 0; i < items; i++, items_total++)
+            {
+                redbas_db_restore_cursor_set(db, i);
+                redbas_db_restore(db, &spoor_objects[items_total], sizeof(*spoor_objects));
+                /* skip temporly deleted elements */
+                if (spoor_objects[items_total].id == SPOOR_OBJECT_DELETED_ID)
+                    items_total--;
+
+                /* filter */
+#if 0
+                printf("stc: %ld\n%ld\n", spoor_time_compare(&spoor_objects[items_total + i].deadline.end, &spoor_filter->spoor_time.start),
+                        spoor_time_compare(&spoor_objects[items_total + i].deadline.end, &spoor_filter->spoor_time.end));
+                if (spoor_time_compare(&spoor_objects[items_total + i].deadline.end, &spoor_filter->spoor_time.start) < 0 ||
+                    spoor_time_compare(&spoor_objects[items_total + i].deadline.end, &spoor_filter->spoor_time.end) > 0)
+                    items_total--;
+#endif
+            }
+
+            redbas_db_close(db);
+        }
+    }
+
+    closedir(dir);
+    return items_total;
+}
+
+uint32_t spoor_object_storage_load_filter_time_span(SpoorObject *spoor_objects, SpoorTimeSpan *spoor_time_span)
+{
+    DIR *dir = opendir(".");
+    struct dirent *ptr;
+    uint32_t items_total = 0;
+    uint32_t i;
+    while ((ptr = readdir(dir)) != NULL)
+    {
+        if (strncmp(ptr->d_name + 6, ".rdb", 3) == 0)
+        {
+            RedbasDB *db = redbas_db_open(ptr->d_name, sizeof(*spoor_objects));
+            uint32_t items = redbas_db_items(db);
+            for (i = 0; i < items; i++)
+            {
+                redbas_db_restore_cursor_set(db, i);
+                redbas_db_restore(db, &spoor_objects[items_total + i], sizeof(*spoor_objects));
+                /* skip temporly deleted elements */
+                if (spoor_objects[items_total + i].id == SPOOR_OBJECT_DELETED_ID)
+                    items_total--;
+
+                /* time span filter */
+                if (spoor_time_compare(&spoor_objects[items_total + i].deadline.end, &spoor_time_span->start) >= 0)
+                    items_total--;
+            }
+
+            items_total += items;
+
+            redbas_db_close(db);
+        }
+    }
+
+    closedir(dir);
+    spoor_sort_objects_by_deadline(spoor_objects, items_total);
+    return items_total;
+}
+
+void spoor_storage_change(SpoorObject *spoor_object)
+{
+    char db_path[11];
+    storage_db_path(spoor_object, db_path);
+
+    RedbasDB *db = redbas_db_open(db_path, sizeof(*spoor_object));
+    redbas_db_change(db, spoor_object, sizeof(*spoor_object), spoor_object->id);
+    redbas_db_close(db);
+}
+
+void spoor_storage_delete(SpoorObject *spoor_object)
+{
+    char db_path[11];
+    storage_db_path(spoor_object, db_path);
+
+    uint32_t spoor_object_id_backup = spoor_object->id;
+    spoor_object->id = SPOOR_OBJECT_DELETED_ID;
+
+    /* check if spoor_object has link */
+    if (spoor_object->id_link != SPOOR_OBJECT_NO_LINK)
+    {
+        /* restore global_link */
+        RedbasDB *db_links = redbas_db_open("links", sizeof(link_global));
+        redbas_db_restore_cursor_set(db_links, spoor_object->id_link);
+        redbas_db_restore(db_links, &link_global, sizeof(link_global));
+
+        /* check if spoor_object link is parent */
+        char location[11];
+        storage_db_path(spoor_object, location);
+        if (spoor_object_id_backup == link_global.id_parent &&
+            strcmp(location, link_global.location_parent) == 0)
+        {
+            uint32_t link_global_id_backup = link_global.id;
+            link_global.id = SPOOR_OBJECT_DELETED_ID;
+            redbas_db_change(db_links, &link_global, sizeof(link_global), link_global_id_backup);
+
+            /* links all childs delete */
+            while (link_global.id_next != SPOOR_OBJECT_NO_LINK)
+            {
+                redbas_db_restore_cursor_set(db_links, link_global.id_next);
+                redbas_db_restore(db_links, &link_global, sizeof(link_global));
+                link_global_id_backup = link_global.id;
+                link_global.id = SPOOR_OBJECT_DELETED_ID;
+                redbas_db_change(db_links, &link_global, sizeof(link_global), link_global.id);
+
+                /* remove link from spoor_object child */
+                SpoorObject spoor_object;
+                RedbasDB *db_spoor_object = redbas_db_open(link_global.location_child, sizeof(link_global));
+                redbas_db_restore_cursor_set(db_spoor_object, link_global.id_child);
+                redbas_db_restore(db_spoor_object, &spoor_object, sizeof(spoor_object));
+                spoor_object.id_link = SPOOR_OBJECT_NO_LINK;
+                spoor_object.parent_title[0] = 0;
+                redbas_db_change(db_spoor_object, &spoor_object, sizeof(spoor_object), spoor_object.id);
+                redbas_db_close(db_spoor_object);
+            }
+        }
+
+        redbas_db_close(db_links);
+    }
+
+    storage_db_path(spoor_object, db_path);
+    RedbasDB *db = redbas_db_open(db_path, sizeof(*spoor_object));
+    redbas_db_change(db, spoor_object, sizeof(*spoor_object), spoor_object_id_backup);
+    redbas_db_close(db);
+}
+
+void spoor_storage_clean_up(void)
+{
+    DIR *dir = opendir(".");
+    struct dirent *ptr;
+    while ((ptr = readdir(dir)) != NULL)
+    {
+        if (strncmp(ptr->d_name + 6, ".rdb", 3) == 0)
+        {
+            SpoorObject spoor_object;
+            RedbasDB *db = redbas_db_open(ptr->d_name, sizeof(spoor_object));
+            RedbasDB *db_tmp = redbas_db_open(".tmp_db", sizeof(spoor_object));
+
+            uint32_t items = redbas_db_items(db);
+            uint32_t i;
+            uint32_t spoor_object_index;
+            for (i = 0, spoor_object_index = 0; i < items; i++)
+            {
+                redbas_db_restore_cursor_set(db, i);
+                redbas_db_restore(db, &spoor_object, sizeof(spoor_object));
+                if (spoor_object.id != SPOOR_OBJECT_DELETED_ID)
+                {
+                    spoor_object.id = spoor_object_index;
+                    redbas_db_store(db_tmp, &spoor_object, sizeof(spoor_object));
+                    spoor_object_index++;
+                }
+           }
+
+            redbas_db_close(db_tmp);
+            redbas_db_close(db);
+            rename(".tmp_db", ptr->d_name);
+        }
+    }
+
+    closedir(dir);
+}
+

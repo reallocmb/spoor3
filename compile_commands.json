@@ -1,0 +1,206 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-std=gnu89",
+      "-g",
+      "-Iinc",
+      "-c",
+      "-o",
+      "obj/main.o",
+      "src/main.c"
+    ],
+    "directory": "/home/mb/ws/spoor",
+    "file": "/home/mb/ws/spoor/src/main.c",
+    "output": "/home/mb/ws/spoor/obj/main.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-std=gnu89",
+      "-g",
+      "-Iinc",
+      "-c",
+      "-o",
+      "obj/s_test.o",
+      "src/s_test.c"
+    ],
+    "directory": "/home/mb/ws/spoor",
+    "file": "/home/mb/ws/spoor/src/s_test.c",
+    "output": "/home/mb/ws/spoor/obj/s_test.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-std=gnu89",
+      "-g",
+      "-Iinc",
+      "-c",
+      "-o",
+      "obj/redbas/redbas.o",
+      "src/redbas/redbas.c"
+    ],
+    "directory": "/home/mb/ws/spoor",
+    "file": "/home/mb/ws/spoor/src/redbas/redbas.c",
+    "output": "/home/mb/ws/spoor/obj/redbas/redbas.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-std=gnu89",
+      "-g",
+      "-Iinc",
+      "-c",
+      "-o",
+      "obj/spoor/s_debug.o",
+      "src/spoor/s_debug.c"
+    ],
+    "directory": "/home/mb/ws/spoor",
+    "file": "/home/mb/ws/spoor/src/spoor/s_debug.c",
+    "output": "/home/mb/ws/spoor/obj/spoor/s_debug.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-std=gnu89",
+      "-g",
+      "-Iinc",
+      "-c",
+      "-o",
+      "obj/spoor/s_object.o",
+      "src/spoor/s_object.c"
+    ],
+    "directory": "/home/mb/ws/spoor",
+    "file": "/home/mb/ws/spoor/src/spoor/s_object.c",
+    "output": "/home/mb/ws/spoor/obj/spoor/s_object.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-std=gnu89",
+      "-g",
+      "-Iinc",
+      "-c",
+      "-o",
+      "obj/spoor/s_sort.o",
+      "src/spoor/s_sort.c"
+    ],
+    "directory": "/home/mb/ws/spoor",
+    "file": "/home/mb/ws/spoor/src/spoor/s_sort.c",
+    "output": "/home/mb/ws/spoor/obj/spoor/s_sort.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-std=gnu89",
+      "-g",
+      "-Iinc",
+      "-c",
+      "-o",
+      "obj/spoor/s_span_time.o",
+      "src/spoor/s_span_time.c"
+    ],
+    "directory": "/home/mb/ws/spoor",
+    "file": "/home/mb/ws/spoor/src/spoor/s_span_time.c",
+    "output": "/home/mb/ws/spoor/obj/spoor/s_span_time.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-std=gnu89",
+      "-g",
+      "-Iinc",
+      "-c",
+      "-o",
+      "obj/spoor/s_storage.o",
+      "src/spoor/s_storage.c"
+    ],
+    "directory": "/home/mb/ws/spoor",
+    "file": "/home/mb/ws/spoor/src/spoor/s_storage.c",
+    "output": "/home/mb/ws/spoor/obj/spoor/s_storage.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-std=gnu89",
+      "-g",
+      "-Iinc",
+      "-c",
+      "-o",
+      "obj/spoor/s_time.o",
+      "src/spoor/s_time.c"
+    ],
+    "directory": "/home/mb/ws/spoor",
+    "file": "/home/mb/ws/spoor/src/spoor/s_time.c",
+    "output": "/home/mb/ws/spoor/obj/spoor/s_time.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-std=gnu89",
+      "-g",
+      "-Iinc",
+      "-c",
+      "-o",
+      "obj/spoor/s_ui.o",
+      "src/spoor/s_ui.c"
+    ],
+    "directory": "/home/mb/ws/spoor",
+    "file": "/home/mb/ws/spoor/src/spoor/s_ui.c",
+    "output": "/home/mb/ws/spoor/obj/spoor/s_ui.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-std=gnu89",
+      "-g",
+      "-Iinc",
+      "-c",
+      "-o",
+      "obj/spoor/s_ui_graphapp.o",
+      "src/spoor/s_ui_graphapp.c"
+    ],
+    "directory": "/home/mb/ws/spoor",
+    "file": "/home/mb/ws/spoor/src/spoor/s_ui_graphapp.c",
+    "output": "/home/mb/ws/spoor/obj/spoor/s_ui_graphapp.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-std=gnu89",
+      "-g",
+      "-Iinc",
+      "-c",
+      "-o",
+      "obj/spoor/s_ui_raylib.o",
+      "src/spoor/s_ui_raylib.c"
+    ],
+    "directory": "/home/mb/ws/spoor",
+    "file": "/home/mb/ws/spoor/src/spoor/s_ui_raylib.c",
+    "output": "/home/mb/ws/spoor/obj/spoor/s_ui_raylib.o"
+  }
+]

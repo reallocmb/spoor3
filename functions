@@ -1,0 +1,27 @@
+// create
+[title],[deadline] [schedule] [status] [type]
+
+-> [deadline]
+(count)[mode](start_time)-(count)(mode)(end_time)
+(count)[mode](start_time)-(end_time)
+(count)[mode](end_time)
+
+
+d
+5d
+d900
+5d900
+d-d
+5d-d
+d-5d
+
+[mode]
+(count)[mode]
+[mode](end_time)
+(count)[mode](end_time)
+[mode]-[mode]
+[mode](start_time)-(end_time)
+(count)[mode](start_time)-[mode](end_time)
+(count)[mode](start_time)-(count)[mode](end_time)
+
+-> [schedule]
