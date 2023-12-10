@@ -296,11 +296,22 @@ bool spoor_object_edit(SpoorObject *spoor_object, char *arguments)
             spoor_object->status = STATUS_IN_PROGRESS;
         else if (strncmp(arguments, "ns", 2) == 0)
             spoor_object->status = STATUS_NOT_STARTED;
+        else if (strncmp(arguments, "l", 1) == 0)
+        {
+            spoor_object->id_link = 0;
+            for (i = 1; i < argument_length; i++)
+            {
+                spoor_object->id_link += 10;
+                spoor_object->id_link += arguments[i] - 0x30;
+            }
+        }
+#if 0
         else if (strncmp(arguments, "-1", 2) == 0)
         {
             memset(&spoor_object->deadline + time_argument_count, -1, sizeof(spoor_object->deadline));
             time_argument_count++;
         }
+#endif
         else if (strncmp(arguments, "-", 1) == 0)
             time_argument_count++;
         else

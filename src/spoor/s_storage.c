@@ -97,7 +97,6 @@ void spoor_storage_save(SpoorObject *spoor_objects, SpoorObject *spoor_object)
         spoor_object_parent = &spoor_objects[spoor_object->id_link];
 
         /* link_global set */
-
         storage_db_path(spoor_object, location);
         strcpy(link_global.location_child, location);
         link_global.id_child = spoor_object->id;
@@ -257,10 +256,17 @@ void spoor_storage_delete(SpoorObject *spoor_object)
     /* check if spoor_object has link */
     if (spoor_object->id_link != SPOOR_OBJECT_NO_LINK)
     {
+        SpoorObject spoor_object_tmp;
+
         /* restore global_link */
         RedbasDB *db_links = redbas_db_open("links", sizeof(link_global));
         redbas_db_restore_cursor_set(db_links, spoor_object->id_link);
         redbas_db_restore(db_links, &link_global, sizeof(link_global));
+
+        /* remove current global_link and save */
+        uint32_t link_global_id_backup = link_global.id;
+        link_global.id = SPOOR_OBJECT_DELETED_ID;
+        redbas_db_change(db_links, &link_global, sizeof(link_global), link_global_id_backup);
 
         /* check if spoor_object link is parent */
         char location[11];
@@ -268,9 +274,15 @@ void spoor_storage_delete(SpoorObject *spoor_object)
         if (spoor_object_id_backup == link_global.id_parent &&
             strcmp(location, link_global.location_parent) == 0)
         {
-            uint32_t link_global_id_backup = link_global.id;
-            link_global.id = SPOOR_OBJECT_DELETED_ID;
-            redbas_db_change(db_links, &link_global, sizeof(link_global), link_global_id_backup);
+            /* remove link from spoor_object child */
+            RedbasDB *db_spoor_object = redbas_db_open(link_global.location_child, sizeof(link_global));
+            redbas_db_restore_cursor_set(db_spoor_object, link_global.id_child);
+            redbas_db_restore(db_spoor_object, &spoor_object_tmp, sizeof(spoor_object_tmp));
+            spoor_object_tmp.id_link = SPOOR_OBJECT_NO_LINK;
+            spoor_object_tmp.parent_title[0] = '-';
+            spoor_object_tmp.parent_title[1] = 0;
+            redbas_db_change(db_spoor_object, &spoor_object_tmp, sizeof(spoor_object_tmp), spoor_object_tmp.id);
+            redbas_db_close(db_spoor_object);
 
             /* links all childs delete */
             while (link_global.id_next != SPOOR_OBJECT_NO_LINK)
@@ -279,17 +291,67 @@ void spoor_storage_delete(SpoorObject *spoor_object)
                 redbas_db_restore(db_links, &link_global, sizeof(link_global));
                 link_global_id_backup = link_global.id;
                 link_global.id = SPOOR_OBJECT_DELETED_ID;
-                redbas_db_change(db_links, &link_global, sizeof(link_global), link_global.id);
+                redbas_db_change(db_links, &link_global, sizeof(link_global), link_global_id_backup);
 
                 /* remove link from spoor_object child */
-                SpoorObject spoor_object;
                 RedbasDB *db_spoor_object = redbas_db_open(link_global.location_child, sizeof(link_global));
                 redbas_db_restore_cursor_set(db_spoor_object, link_global.id_child);
-                redbas_db_restore(db_spoor_object, &spoor_object, sizeof(spoor_object));
-                spoor_object.id_link = SPOOR_OBJECT_NO_LINK;
-                spoor_object.parent_title[0] = 0;
-                redbas_db_change(db_spoor_object, &spoor_object, sizeof(spoor_object), spoor_object.id);
+                redbas_db_restore(db_spoor_object, &spoor_object_tmp, sizeof(spoor_object_tmp));
+                spoor_object_tmp.id_link = SPOOR_OBJECT_NO_LINK;
+                spoor_object_tmp.parent_title[0] = '-';
+                spoor_object_tmp.parent_title[1] = 0;
+                redbas_db_change(db_spoor_object, &spoor_object_tmp, sizeof(spoor_object_tmp), spoor_object_tmp.id);
                 redbas_db_close(db_spoor_object);
+            }
+        }
+        else /* if spoor_object is child */
+        {
+            /* when first link is removed */
+            if (link_global.id_prev == SPOOR_OBJECT_NO_LINK)
+            {
+                /* remove link from parenat and set it to next child */
+                RedbasDB *db_spoor_object = redbas_db_open(link_global.location_parent, sizeof(link_global));
+                redbas_db_restore_cursor_set(db_spoor_object, link_global.id_parent);
+                redbas_db_restore(db_spoor_object, &spoor_object_tmp, sizeof(spoor_object_tmp));
+
+                /* when only one link child */
+                if (link_global.id_next == SPOOR_OBJECT_NO_LINK)
+                    spoor_object_tmp.id_link = SPOOR_OBJECT_NO_LINK;
+                else
+                {
+                    spoor_object_tmp.id_link = link_global.id_next;
+                    /* get next child */
+                    redbas_db_restore_cursor_set(db_links, link_global.id_next);
+                    redbas_db_restore(db_links, &link_global, sizeof(link_global));
+                    link_global.id_prev = SPOOR_OBJECT_NO_LINK;
+                    redbas_db_change(db_links, &link_global, sizeof(link_global), link_global.id);
+                }
+
+                redbas_db_change(db_spoor_object, &spoor_object_tmp, sizeof(spoor_object_tmp), spoor_object_tmp.id);
+                redbas_db_close(db_spoor_object);
+            }
+            else if (link_global.id_next != SPOOR_OBJECT_NO_LINK) /* when a middle link is removed */
+            {
+                SpoorLink link_prev;
+                SpoorLink link_next;
+                redbas_db_restore_cursor_set(db_links, link_global.id_prev);
+                redbas_db_restore(db_links, &link_prev, sizeof(link_prev));
+                redbas_db_restore_cursor_set(db_links, link_global.id_next);
+                redbas_db_restore(db_links, &link_next, sizeof(link_next));
+
+                link_prev.id_next = link_next.id;
+                link_next.id_prev = link_prev.id;
+                redbas_db_change(db_links, &link_prev, sizeof(link_prev), link_prev.id);
+                redbas_db_change(db_links, &link_next, sizeof(link_next), link_next.id);
+            }
+            else /* when the last link is removed */
+            {
+                /* get prev child */
+                redbas_db_restore_cursor_set(db_links, link_global.id_prev);
+                redbas_db_restore(db_links, &link_global, sizeof(link_global));
+
+                link_global.id_next = SPOOR_OBJECT_NO_LINK;
+                redbas_db_change(db_links, &link_global, sizeof(link_global), link_global.id);
             }
         }
 
