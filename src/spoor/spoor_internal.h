@@ -56,6 +56,9 @@ typedef struct SpoorObject {
     SpoorType type;
 } SpoorObject;
 
+extern SpoorObject spoor_objects[500];
+extern uint32_t spoor_objects_count;
+
 typedef struct {
     uint32_t id;
     char location_parent[11];
@@ -76,31 +79,31 @@ typedef struct {
 } SpoorSort;
 
 SpoorObject *spoor_object_create(char *arguments);
-bool spoor_object_edit(SpoorObject *spoor_object, char *arguments);
+void spoor_object_edit(SpoorObject *spoor_object, char *arguments);
 
 void mdb_func_error_check(int error, char *func_name, int line, char *file);
 void spoor_debug_spoor_object_print(SpoorObject *spoor_object);
 
-uint32_t spoor_object_storage_load(SpoorObject *spoor_objects, SpoorFilter *spoor_filter);
-void spoor_sort_objects(SpoorObject *spoor_objects, uint32_t spoor_objects_count);
+uint32_t spoor_object_storage_load(SpoorFilter *spoor_filter);
+void spoor_sort_objects(void);
 
 void spoor_object_progress_change(SpoorObject *spoor_object, SpoorStatus status);
-void spoor_storage_save(SpoorObject *spoor_objects, SpoorObject *spoor_object);
+void spoor_storage_save(SpoorObject *spoor_object);
 
-void spoor_storage_change(SpoorObject *spoor_object);
+void spoor_storage_change(SpoorObject *spoor_object_old, SpoorObject *spoor_object);
 void spoor_storage_delete(SpoorObject *spoor_object);
 void spoor_object_schedule_set(SpoorObject *spoor_object, char *command);
 void spoor_object_deadline_set(SpoorObject *spoor_object, char *command);
 
 void spoor_storage_clean_up(void);
-uint32_t spoor_object_storage_load_filter_time_span(SpoorObject *spoor_objects, SpoorTimeSpan *time_span);
+uint32_t spoor_object_storage_load_filter_time_span(SpoorTimeSpan *time_span);
 
 void spoor_time_span_create(SpoorTimeSpan *spoor_time_span, char *command);
 
 /* sort */
 int64_t spoor_time_compare(SpoorTime *time1, SpoorTime *time2);
-void spoor_sort_objects_by_title(SpoorObject *spoor_objects, uint32_t spoor_objects_count);
-void spoor_sort_objects_by_deadline(SpoorObject *spoor_objects, uint32_t spoor_objects_count);
+void spoor_sort_objects_by_title(void);
+void spoor_sort_objects_by_deadline(void);
 
 void spoor_time_deadline_create(char *argument, uint32_t argument_length, SpoorTimeSpan *spoor_time);
 

@@ -24,7 +24,7 @@ int sort_func(const void *data0, const void *data1)
     return result;
 }
 
-void spoor_sort_objects_by_deadline(SpoorObject *spoor_objects, uint32_t spoor_objects_count)
+void spoor_sort_objects_by_deadline(void)
 {
     qsort(spoor_objects, spoor_objects_count, sizeof(*spoor_objects), sort_func);
 #if 0
@@ -43,7 +43,7 @@ void spoor_sort_objects_by_deadline(SpoorObject *spoor_objects, uint32_t spoor_o
 #endif
 }
 
-void spoor_sort_objects(SpoorObject *spoor_objects, uint32_t spoor_objects_count)
+void spoor_sort_objects(void)
 {
 
     uint32_t i;

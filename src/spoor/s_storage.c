@@ -5,6 +5,9 @@
 #include<string.h>
 #include<dirent.h>
 
+SpoorObject spoor_objects[500];
+uint32_t spoor_objects_count;
+
 void storage_db_path_clean(SpoorObject *spoor_object, char *db_path_clean)
 {
     if (spoor_object->deadline.end.year == -1)
@@ -78,7 +81,7 @@ uint32_t spoor_storage_space_free_index(RedbasDB *db)
     return i;
 }
 
-void spoor_storage_save(SpoorObject *spoor_objects, SpoorObject *spoor_object)
+void spoor_storage_save(SpoorObject *spoor_object)
 {
     char location[11];
     RedbasDB *db_spoor_object;
@@ -161,7 +164,7 @@ void spoor_storage_save(SpoorObject *spoor_objects, SpoorObject *spoor_object)
 
 }
 
-uint32_t spoor_object_storage_load(SpoorObject *spoor_objects, SpoorFilter *spoor_filter)
+uint32_t spoor_object_storage_load(SpoorFilter *spoor_filter)
 {
     DIR *dir = opendir(".");
     struct dirent *ptr;
@@ -199,7 +202,7 @@ uint32_t spoor_object_storage_load(SpoorObject *spoor_objects, SpoorFilter *spoo
     return items_total;
 }
 
-uint32_t spoor_object_storage_load_filter_time_span(SpoorObject *spoor_objects, SpoorTimeSpan *spoor_time_span)
+uint32_t spoor_object_storage_load_filter_time_span(SpoorTimeSpan *time_span)
 {
     DIR *dir = opendir(".");
     struct dirent *ptr;
@@ -220,7 +223,7 @@ uint32_t spoor_object_storage_load_filter_time_span(SpoorObject *spoor_objects, 
                     items_total--;
 
                 /* time span filter */
-                if (spoor_time_compare(&spoor_objects[items_total + i].deadline.end, &spoor_time_span->start) >= 0)
+                if (spoor_time_compare(&spoor_objects[items_total + i].deadline.end, &time_span->start) >= 0)
                     items_total--;
             }
 
@@ -231,18 +234,34 @@ uint32_t spoor_object_storage_load_filter_time_span(SpoorObject *spoor_objects, 
     }
 
     closedir(dir);
-    spoor_sort_objects_by_deadline(spoor_objects, items_total);
+    spoor_sort_objects_by_deadline();
     return items_total;
 }
 
-void spoor_storage_change(SpoorObject *spoor_object)
+void spoor_storage_change(SpoorObject *spoor_object_old, SpoorObject *spoor_object)
 {
-    char db_path[11];
-    storage_db_path(spoor_object, db_path);
+    char location_old[11];
+    char location[11];
+    storage_db_path(spoor_object_old, location_old);
+    storage_db_path(spoor_object, location);
 
-    RedbasDB *db = redbas_db_open(db_path, sizeof(*spoor_object));
+    spoor_storage_delete(spoor_object_old);
+    spoor_storage_save(spoor_object);
+#if 0
+    /* if spoor_object has new location */
+    if (strcmp(location_old, location) != 0)
+    {
+        spoor_storage_delete(spoor_object_old);
+        spoor_storage_save(spoor_object);
+    }
+    else
+    {
+    }
+
+    RedbasDB *db = redbas_db_open(location, sizeof(*spoor_object));
     redbas_db_change(db, spoor_object, sizeof(*spoor_object), spoor_object->id);
     redbas_db_close(db);
+#endif
 }
 
 void spoor_storage_delete(SpoorObject *spoor_object)

@@ -187,9 +187,7 @@ void spoor_ui_object_show(void)
     spoor_filter.spoor_time.end = spoor_filter.spoor_time.start;
     spoor_filter.spoor_time.end.hour = -1;
     spoor_filter.spoor_time.end.min = -1;
-    SpoorObject spoor_objects[500];
-    uint32_t spoor_objects_count = 0;
-    spoor_objects_count = spoor_object_storage_load(spoor_objects, &spoor_filter);
+    spoor_objects_count = spoor_object_storage_load(&spoor_filter);
 #if 0
     SpoorTimeSpan spoor_span;
     spoor_span.start.year = 123;
@@ -213,7 +211,7 @@ void spoor_ui_object_show(void)
     while (1)
     {
         /* sorting */
-        spoor_sort_objects_by_deadline(spoor_objects, spoor_objects_count);
+        spoor_sort_objects_by_deadline();
 
         /* window size update */
         ui_window_rows_get(&window_rows);
@@ -279,10 +277,10 @@ void spoor_ui_object_show(void)
                 else if (strncmp(arguments + 1, "c", 1) == 0)
                 {
                     SpoorObject *spoor_object = spoor_object_create(arguments + 2);
-                    spoor_storage_save(spoor_objects, spoor_object);
+                    spoor_storage_save(spoor_object);
 
                     free(spoor_object);
-                    spoor_objects_count = spoor_object_storage_load(spoor_objects, &spoor_filter);
+                    spoor_objects_count = spoor_object_storage_load(&spoor_filter);
                 }
                 else if (arguments[1] == 'l')
                 {
@@ -326,15 +324,16 @@ void spoor_ui_object_show(void)
                     SpoorObject *spoor_object = &spoor_objects[index + offset];
                     if (arguments[p + 1] == 'e')
                     {
+                        SpoorObject spoor_object_old = *spoor_object;
                         spoor_object_edit(spoor_object, arguments + p + 2);
-                        spoor_storage_change(spoor_object);
+                        spoor_storage_change(&spoor_object_old, spoor_object);
 
-                        spoor_objects_count = spoor_object_storage_load(spoor_objects, &spoor_filter);
+                        spoor_objects_count = spoor_object_storage_load(&spoor_filter);
                     }
                     else if (arguments[p + 1] == 'd')
                     {
                         spoor_storage_delete(spoor_object);
-                        spoor_objects_count = spoor_object_storage_load(spoor_objects, &spoor_filter);
+                        spoor_objects_count = spoor_object_storage_load(&spoor_filter);
                     }
                     else
                     {

@@ -249,10 +249,8 @@ SpoorObject *spoor_object_create(char *arguments)
     return spoor_object;
 }
 
-bool spoor_object_edit(SpoorObject *spoor_object, char *arguments)
+void spoor_object_edit(SpoorObject *spoor_object, char *arguments)
 {
-    SpoorObject old = *spoor_object;
-
     /* create title */
     uint16_t i;
 
@@ -301,7 +299,7 @@ bool spoor_object_edit(SpoorObject *spoor_object, char *arguments)
             spoor_object->id_link = 0;
             for (i = 1; i < argument_length; i++)
             {
-                spoor_object->id_link += 10;
+                spoor_object->id_link *= 10;
                 spoor_object->id_link += arguments[i] - 0x30;
             }
         }
@@ -323,15 +321,6 @@ bool spoor_object_edit(SpoorObject *spoor_object, char *arguments)
             }
         }
     }
-
-    if (!(old.deadline.end.year == spoor_object->deadline.end.year &&
-          old.deadline.end.mon == spoor_object->deadline.end.mon))
-    {
-        /* to do */
-        return 0;
-    }
-
-    return 1;
 }
 
 #if 0
