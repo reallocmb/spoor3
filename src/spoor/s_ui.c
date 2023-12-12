@@ -152,6 +152,7 @@ void ui_window_rows_get(uint32_t *window_rows)
 
 void spoor_ui_object_show(void)
 {
+    int32_t index_current = 0;
 #if 0
     SpoorFilter spoor_filter;
     SpoorObject spoor_objects[500];
@@ -235,6 +236,8 @@ void spoor_ui_object_show(void)
             time_format_parse_deadline(&spoor_objects[i + offset].deadline, time_format_deadline);
             time_format_parse_schedule(&spoor_objects[i + offset].schedule, time_format_schedule);
             cursor_move(0, 3 + i);
+            if (i == index_current)
+                printf("\e[1;47m");
             fprintf(stdout,
                     "%-5d%-30s%-18s%-24s%-21s%-13s%s",
                     i,
@@ -244,6 +247,7 @@ void spoor_ui_object_show(void)
                     UI_STATUS[spoor_objects[i + offset].status],
                     UI_TYPES[spoor_objects[i + offset].type],
                     spoor_objects[i + offset].parent_title);
+            printf("\e[m");
         }
 
         /* print status bar */
@@ -359,6 +363,12 @@ void spoor_ui_object_show(void)
                 arguments[0] = ':';
                 arguments_pos++;
             }
+            if (c == 'n')
+                index_current++;
+            if (c == 'r')
+                index_current--;
+            if (index_current < 0)
+                index_current = 0;
             if (c == 'f')
                 offset += (window_rows - 4) / 2;
             if (c == 'b')
