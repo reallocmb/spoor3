@@ -204,6 +204,7 @@ void spoor_ui_object_show(void)
 
 
     uint32_t offset = 0;
+    uint32_t modus_num = 1;
 
     cursor_hide();
     bool command_mode = false;
@@ -230,17 +231,32 @@ void spoor_ui_object_show(void)
         char time_format_schedule[50] = { 0 };
 
         uint32_t i;
+        uint32_t _i;
         for (i = 0; i < spoor_objects_count && i < window_rows - 5; i++)
         {
             title_format_parse(spoor_objects[i + offset].title, title_format);
             time_format_parse_deadline(&spoor_objects[i + offset].deadline, time_format_deadline);
             time_format_parse_schedule(&spoor_objects[i + offset].schedule, time_format_schedule);
             cursor_move(0, 3 + i);
+
+            /* relativ numbers and shit */
             if (i == (uint32_t)index_current)
                 printf("\e[1;47m");
+            if (modus_num == 1)
+            {
+                if (i == index_current)
+                    _i = i;
+                else if (i > index_current)
+                    _i = i - index_current;
+                else
+                    _i = index_current - i;
+            }
+            else
+                _i = i;
+
             fprintf(stdout,
                     "%-5d%-30s%-18s%-24s%-21s%-13s%s",
-                    i,
+                    _i,
                     title_format,
                     time_format_deadline,
                     time_format_schedule,
@@ -386,7 +402,7 @@ void spoor_ui_object_show(void)
             {
                 command_mode = true;
                 arguments[0] = ':';
-                arguments[1] = 'e';
+                arguments[1] = 'd';
                 arguments_pos += 2;
             }
             if (c == 'n')
