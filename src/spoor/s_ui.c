@@ -236,7 +236,7 @@ void spoor_ui_object_show(void)
             time_format_parse_deadline(&spoor_objects[i + offset].deadline, time_format_deadline);
             time_format_parse_schedule(&spoor_objects[i + offset].schedule, time_format_schedule);
             cursor_move(0, 3 + i);
-            if (i == index_current)
+            if (i == (uint32_t)index_current)
                 printf("\e[1;47m");
             fprintf(stdout,
                     "%-5d%-30s%-18s%-24s%-21s%-13s%s",
@@ -319,11 +319,16 @@ void spoor_ui_object_show(void)
                     /* index */
                     uint32_t index = 0;
                     uint32_t p = 0;
-                    while (arguments[1 + p] >= 0x30 && arguments[1 + p] <= 0x39)
+                    if (!(arguments[1] >= 0x30 && arguments[1] <= 0x39))
+                        index = index_current;
+                    else
                     {
-                        index *= 10;
-                        index += arguments[1 + p] - 0x30;
-                        p++;
+                        while (arguments[1 + p] >= 0x30 && arguments[1 + p] <= 0x39)
+                        {
+                            index *= 10;
+                            index += arguments[1 + p] - 0x30;
+                            p++;
+                        }
                     }
                     SpoorObject *spoor_object = &spoor_objects[index + offset];
                     if (arguments[p + 1] == 'e')
@@ -362,6 +367,27 @@ void spoor_ui_object_show(void)
                 command_mode = true;
                 arguments[0] = ':';
                 arguments_pos++;
+            }
+            if (c == 'c')
+            {
+                command_mode = true;
+                arguments[0] = ':';
+                arguments[1] = 'c';
+                arguments_pos += 2;
+            }
+            if (c == 'e')
+            {
+                command_mode = true;
+                arguments[0] = ':';
+                arguments[1] = 'e';
+                arguments_pos += 2;
+            }
+            if (c == 'd')
+            {
+                command_mode = true;
+                arguments[0] = ':';
+                arguments[1] = 'e';
+                arguments_pos += 2;
             }
             if (c == 'n')
                 index_current++;
