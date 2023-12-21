@@ -41,6 +41,7 @@ typedef struct {
 
 #define SPOOR_OBJECT_DELETED_ID 0xffffffff
 #define SPOOR_OBJECT_NO_LINK 0xffffffff
+#define SPOOR_OBJECT_NEW_LINK 0xfffffffe
 
 typedef struct SpoorObject {
     uint32_t id;

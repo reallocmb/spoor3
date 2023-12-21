@@ -150,6 +150,28 @@ void ui_window_rows_get(uint32_t *window_rows)
 #endif
 }
 
+uint32_t buffer_command_count_get(char *buffer_command, uint32_t buffer_command_length)
+{
+    uint32_t i;
+    uint32_t offset = 0;
+
+    for (i = 0; i < buffer_command_length; i++)
+    {
+        offset *= 10;
+        offset += buffer_command[i] - 0x30;
+    }
+
+    return offset;
+}
+
+void index_current_check(int32_t *index_current, uint32_t spoor_objects_count)
+{
+    if (*index_current < 0)
+        *index_current = 0;
+    if (*index_current >= (int32_t)spoor_objects_count)
+        *index_current = spoor_objects_count - 1;
+}
+
 void spoor_ui_object_show(void)
 {
     int32_t index_current = 0;
@@ -202,11 +224,14 @@ void spoor_ui_object_show(void)
     uint32_t window_rows = 0;
     ui_window_rows_get(&window_rows);
 
-
     uint32_t offset = 0;
     uint32_t modus_num = 1;
 
     cursor_hide();
+
+    char buffer_command[200];
+    uint8_t buffer_command_length = 0;
+
     bool command_mode = false;
     char arguments[200] = { 0 };
     uint8_t arguments_pos = 0;
@@ -241,7 +266,7 @@ void spoor_ui_object_show(void)
 
             /* relativ numbers and shit */
             if (i == (uint32_t)index_current)
-                printf("\e[1;47m");
+                printf("\e[2;30;45m");
             if (modus_num == 1)
             {
                 if (i == index_current)
@@ -272,19 +297,28 @@ void spoor_ui_object_show(void)
         cursor_move(0, window_rows -1);
         fprintf(stdout, "%s", arguments);
         cursor_move(0, window_rows);
-        fprintf(stdout, "-- Elements: [%d - %d](%d)", offset, offset + window_rows - 5, spoor_objects_count);
+        fprintf(stdout,
+                "-- Elements: [%d - %d](%d) %.*s",
+                offset, offset + window_rows - 5,
+                spoor_objects_count,
+                buffer_command_length, 
+                buffer_command);
 
         /* key input */
+        uint32_t input = getchar();
+
+        buffer_command[buffer_command_length++] = input;
+        buffer_command[buffer_command_length] = 0;
         if (command_mode)
         {
-            uint32_t c = getchar();
-            if (c == 0x7f)
+            if (input == 0x7f)
             {
-                arguments[--arguments_pos] = 0;
+                buffer_command[--buffer_command_length] = 0;
             }
-            else if (c == '\n')
+            if (input == '\n')
             {
-                if (strncmp(arguments + 1, "q", 1) == 0)
+                buffer_command[buffer_command_length - 1] = 0;
+                if (strncmp(buffer_command + 1, "q", 1) == 0)
                 {
                     cursor_move(0, 0);
                     screen_clear();
@@ -294,22 +328,22 @@ void spoor_ui_object_show(void)
 #endif
                     break;
                 }
-                else if (strncmp(arguments + 1, "c", 1) == 0)
+                else if (strncmp(buffer_command + 1, "c", 1) == 0)
                 {
-                    SpoorObject *spoor_object = spoor_object_create(arguments + 2);
+                    SpoorObject *spoor_object = spoor_object_create(buffer_command + 2);
                     spoor_storage_save(spoor_object);
 
                     free(spoor_object);
                     spoor_objects_count = spoor_object_storage_load(&spoor_filter);
                 }
-                else if (arguments[1] == 'l')
+                else if (buffer_command[1] == 'l')
                 {
                     screen_clear();
                     cursor_move(0, 0);
                     spoor_debug_links();
                     getchar();
                 }
-                else if (arguments[1] == 'h')
+                else if (buffer_command[1] == 'h')
                 {
                     screen_clear();
                     cursor_move(0, 0);
@@ -335,27 +369,27 @@ void spoor_ui_object_show(void)
                     /* index */
                     uint32_t index = 0;
                     uint32_t p = 0;
-                    if (!(arguments[1] >= 0x30 && arguments[1] <= 0x39))
+                    if (!(buffer_command[1] >= 0x30 && buffer_command[1] <= 0x39))
                         index = index_current;
                     else
                     {
-                        while (arguments[1 + p] >= 0x30 && arguments[1 + p] <= 0x39)
+                        while (buffer_command[1 + p] >= 0x30 && buffer_command[1 + p] <= 0x39)
                         {
                             index *= 10;
-                            index += arguments[1 + p] - 0x30;
+                            index += buffer_command[1 + p] - 0x30;
                             p++;
                         }
                     }
                     SpoorObject *spoor_object = &spoor_objects[index + offset];
-                    if (arguments[p + 1] == 'e')
+                    if (buffer_command[p + 1] == 'e')
                     {
                         SpoorObject spoor_object_old = *spoor_object;
-                        spoor_object_edit(spoor_object, arguments + p + 2);
-                        spoor_storage_change(&spoor_object_old, spoor_object);
+                        spoor_object_edit(spoor_object, buffer_command + p + 2);
 
+                        spoor_storage_change(&spoor_object_old, spoor_object);
                         spoor_objects_count = spoor_object_storage_load(&spoor_filter);
                     }
-                    else if (arguments[p + 1] == 'd')
+                    else if (buffer_command[p + 1] == 'd')
                     {
                         spoor_storage_delete(spoor_object);
                         spoor_objects_count = spoor_object_storage_load(&spoor_filter);
@@ -368,67 +402,98 @@ void spoor_ui_object_show(void)
                         getchar();
                     }
                 }
-                memset(arguments, 0, 200);
+
+                buffer_command_length = 0;
+                buffer_command[0] = 0;
                 command_mode = false;
-                arguments_pos = 0;
             }
-            else
-                arguments[arguments_pos++] = c;
         }
         else
         {
-            uint32_t c = getchar();
-            if (c == ':')
+            if (input == '\n')
             {
                 command_mode = true;
-                arguments[0] = ':';
-                arguments_pos++;
+                buffer_command[0] = ':';
+                buffer_command[1] = 0;
+                buffer_command_length = 1;
             }
-            if (c == 'c')
-            {
-                command_mode = true;
-                arguments[0] = ':';
-                arguments[1] = 'c';
-                arguments_pos += 2;
-            }
-            if (c == 'e')
-            {
-                command_mode = true;
-                arguments[0] = ':';
-                arguments[1] = 'e';
-                arguments_pos += 2;
-            }
-            if (c == 'd')
-            {
-                command_mode = true;
-                arguments[0] = ':';
-                arguments[1] = 'd';
-                arguments_pos += 2;
-            }
-            if (c == 'n')
-                index_current++;
-            if (c == 'r')
-                index_current--;
-            if (index_current < 0)
-                index_current = 0;
-            if (c == 'f')
-                offset += (window_rows - 4) / 2;
-            if (c == 'b')
-            {
-                if (((int64_t)offset - (window_rows - 4) / 2) >= 0)
-                    offset -= (window_rows - 4) / 2;
-            }
-
-            if (c == 'q')
+            if (input == 'q')
             {
                 cursor_move(0, 0);
                 screen_clear();
 
-#if 0
-                spoor_storage_clean_up();
-#endif
-
                 break;
+            }
+            switch (input)
+            {
+                case ':':
+                {
+                    command_mode = true;
+                    buffer_command[0] = ':';
+                    buffer_command[1] = 0;
+                    buffer_command_length = 1;
+                    break;
+                }
+                case 'c':
+                {
+                    command_mode = true;
+                    buffer_command[0] = ':';
+                    buffer_command[1] = 'c';
+                    buffer_command[2] = 0;
+                    buffer_command_length = 2;
+                    break;
+                }
+                case 'e':
+                {
+                    command_mode = true;
+                    buffer_command[0] = ':';
+                    buffer_command[1] = 'e';
+                    buffer_command[2] = 0;
+                    buffer_command_length = 2;
+                    break;
+                }
+                case 'd':
+                {
+                    command_mode = true;
+                    buffer_command[0] = ':';
+                    buffer_command[1] = 'd';
+                    buffer_command[2] = 0;
+                    buffer_command_length = 2;
+                    break;
+                }
+                case 'l':
+                {
+                    command_mode = true;
+                    buffer_command[0] = ':';
+                    buffer_command[1] = 'l';
+                    buffer_command[2] = 0;
+                    buffer_command_length = 2;
+                    break;
+                }
+                case 'n':
+                {
+                    uint32_t offset = buffer_command_count_get(buffer_command, buffer_command_length - 1);
+                    if (offset)
+                        index_current += offset;
+                    else
+                        index_current++;
+                    buffer_command_length = 0;
+                    buffer_command[0] = 0;
+                    index_current_check(&index_current, spoor_objects_count);
+                    break;
+                }
+                case 'r':
+                {
+                    uint32_t offset = buffer_command_count_get(buffer_command, buffer_command_length - 1);
+                    if (offset)
+                        index_current -= offset;
+                    else
+                        index_current--;
+                    buffer_command_length = 0;
+                    buffer_command[0] = 0;
+                    index_current_check(&index_current, spoor_objects_count);
+                    break;
+                }
             }
         }
     }

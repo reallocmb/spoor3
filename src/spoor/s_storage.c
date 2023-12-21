@@ -383,6 +383,7 @@ void spoor_storage_delete(SpoorObject *spoor_object)
     redbas_db_close(db);
 }
 
+#if 0
 void spoor_storage_clean_up(void)
 {
     DIR *dir = opendir(".");
@@ -418,4 +419,4 @@ void spoor_storage_clean_up(void)
 
     closedir(dir);
 }
-
+#endif

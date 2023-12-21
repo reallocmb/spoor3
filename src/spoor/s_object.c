@@ -303,13 +303,11 @@ void spoor_object_edit(SpoorObject *spoor_object, char *arguments)
                 spoor_object->id_link += arguments[i] - 0x30;
             }
         }
-#if 0
         else if (strncmp(arguments, "-1", 2) == 0)
         {
             memset(&spoor_object->deadline + time_argument_count, -1, sizeof(spoor_object->deadline));
             time_argument_count++;
         }
-#endif
         else if (strncmp(arguments, "-", 1) == 0)
             time_argument_count++;
         else
