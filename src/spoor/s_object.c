@@ -19,7 +19,6 @@ void spoor_time_date_create(char *argument,
     int32_t hour = 0;
     int32_t minute = 0;
     int8_t sign = 1;
-    /* count */
     uint32_t i = 0;
 
     /* count minus */
@@ -40,31 +39,70 @@ void spoor_time_date_create(char *argument,
     mode = argument[i];
     i++;
 
-    /* end time */
+    /* get current time */
     time_t current_time;
     current_time = time(NULL);
 
-    if (mode == 'd')
+
+    /* for static datum like 28.8.2023 */
+    if (mode == ':')
     {
-        current_time += sign * 60 * 60 * 24 * (int32_t)count;
         *date = spoor_time_today_get(&current_time);
+        date->day = count;
+    }
+    else if (mode == '.')
+    {
+        *date = spoor_time_today_get(&current_time);
+        date->day = count;
+
+        count = 0;
+        while (argument[i] >= 0x30 && argument[i] <= 0x39)
+        {
+            count *= 10;
+            count += argument[i] - 0x30;
+            i++;
+        }
+        date->mon = count - 1;
+        /* year */
+        if (argument[i] != ':')
+        {
+            i++;
+            count = 0;
+            while (argument[i] >= 0x30 && argument[i] <= 0x39)
+            {
+                count *= 10;
+                count += argument[i] - 0x30;
+                i++;
+            }
+            date->year = count - 1900;
+        }
+        i++;
     }
     else
     {
-        minute = count;
-        hour = minute / 100;
-        minute = minute % 100;
-
-        date->hour = hour;
-        date->min = minute;
-
-        if (!(hour >= 0 && hour <= 23 && minute >= 0 && minute <= 60))
+        /* end time */
+        if (mode == 'd')
         {
-            date->hour = -1;
-            date->min = -1;
+            current_time += sign * 60 * 60 * 24 * (int32_t)count;
+            *date = spoor_time_today_get(&current_time);
         }
+        else
+        {
+            minute = count;
+            hour = minute / 100;
+            minute = minute % 100;
 
-        return;
+            date->hour = hour;
+            date->min = minute;
+
+            if (!(hour >= 0 && hour <= 23 && minute >= 0 && minute <= 60))
+            {
+                date->hour = -1;
+                date->min = -1;
+            }
+
+            return;
+        }
     }
 
     /* hour & minute */
