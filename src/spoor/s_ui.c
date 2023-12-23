@@ -266,7 +266,7 @@ void spoor_ui_object_show(void)
 
             /* relativ numbers and shit */
             if (i == (uint32_t)index_current)
-                printf("\e[2;30;45m");
+                printf("\e[2;30;46m");
             if (modus_num == 1)
             {
                 if (i == index_current)
@@ -313,7 +313,8 @@ void spoor_ui_object_show(void)
         {
             if (input == 0x7f)
             {
-                buffer_command[--buffer_command_length] = 0;
+                buffer_command_length -= 2;
+                buffer_command[buffer_command_length] = 0;
             }
             if (input == '\n')
             {
