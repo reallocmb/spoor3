@@ -5,6 +5,21 @@
 #include<stdbool.h>
 #include<raylib.h>
 
+#define MODE_INSERT_TOGGLE 'i'
+#define MODE_NORMAL_TOGGLE 0x1b
+
+enum {
+    MODE_NORMAL,
+    MODE_INSERT
+};
+
+char mode_str[2][7] = {
+    "NORMAL",
+    "INSERT",
+};
+
+uint32_t mode = MODE_NORMAL;
+
 Font font_liberation;
 
 typedef struct {
@@ -37,8 +52,8 @@ typedef struct UIArea {
     uint8_t flags;
     void (*draw_func)(struct UIArea *ui_area);
     struct UIArea *childs;
-    uint32_t child_index;
     uint32_t childs_count;
+    uint32_t child_index;
     struct UIArea *parent;
 } UIArea;
 
@@ -229,6 +244,11 @@ void main_page_draw_func(UIArea *ui_area)
                        ui_area->size.x - 2 * margin,
                        ui_area->size.y - 2 * margin,
                        border_color);
+    DrawRectangleLines(ui_area->position.x + margin - 1,
+                       ui_area->position.y + margin - 1,
+                       ui_area->size.x - 2 * margin + 2,
+                       ui_area->size.y - 2 * margin + 2,
+                       border_color);
 
 #if 1
     ui_page_days_draw(ui_area);
@@ -394,7 +414,7 @@ void ui_status_bar_draw(void)
                   UI_STATUS_BAR_HEIGHT,
                   border_color);
 
-    DrawText("-STATUS-",
+    DrawText(mode_str[mode],
              10,
              GetScreenHeight() - UI_STATUS_BAR_HEIGHT + UI_STATUS_BAR_HEIGHT / 4,
              UI_STATUS_BAR_HEIGHT / 4, BLACK);
@@ -408,6 +428,174 @@ void ui_area_close(UIArea *ui_area_current)
         parent->childs[i - 1] = parent->childs[i];
 
     parent->childs_count--;
+}
+
+void ui_area_current_move_left(UIArea **ui_area_current)
+{
+    uint32_t flags = (*ui_area_current)->flags;
+
+    if (flags & UI_AREA_FLAG_LAYOUT_HORIZONTAL &&
+        (*ui_area_current)->child_index != 0)
+    {
+        UIArea *current_new = &(*ui_area_current)->parent->childs[(*ui_area_current)->child_index - 1];
+        if (!current_new)
+            return;
+
+        while (!(current_new->flags & UI_AREA_FLAG_CHILD))
+            current_new = &current_new->childs[current_new->childs_count - 1];
+
+        ui_area_current_update(ui_area_current,
+                               current_new);
+    }
+    else
+    {
+        UIArea *parent = (*ui_area_current)->parent;
+        if (!parent || parent->child_index == 0xffffffff)
+            return;
+
+        while (!(parent->flags & UI_AREA_FLAG_LAYOUT_HORIZONTAL))
+        {
+            if (!parent || parent->child_index == 0xffffffff)
+                return;
+            parent = parent->parent;
+        }
+
+        if (parent->child_index == 0)
+            return;
+        parent = &parent->parent->childs[parent->child_index - 1];
+
+        while (!(parent->flags & UI_AREA_FLAG_CHILD))
+            parent = &parent->childs[parent->childs_count - 1];
+
+        ui_area_current_update(ui_area_current,
+                               parent);
+    }
+}
+
+void ui_area_current_move_right(UIArea **ui_area_current)
+{
+    uint32_t flags = (*ui_area_current)->flags;
+
+    if (flags & UI_AREA_FLAG_LAYOUT_HORIZONTAL &&
+        (*ui_area_current)->child_index != (*ui_area_current)->parent->childs_count - 1)
+    {
+        UIArea *current_new = &(*ui_area_current)->parent->childs[(*ui_area_current)->child_index + 1];
+        if (!current_new)
+            return;
+
+        while (!(current_new->flags & UI_AREA_FLAG_CHILD))
+            current_new = &current_new->childs[0];
+
+        ui_area_current_update(ui_area_current,
+                               current_new);
+    }
+    else
+    {
+        UIArea *parent = (*ui_area_current)->parent;
+        if (!parent || parent->child_index == 0xffffffff)
+            return;
+
+        while (!(parent->flags & UI_AREA_FLAG_LAYOUT_HORIZONTAL))
+        {
+            if (!parent || parent->child_index == 0xffffffff)
+                return;
+            parent = parent->parent;
+        }
+
+        if (parent->child_index + 1 >= parent->parent->childs_count)
+            return;
+        parent = &parent->parent->childs[parent->child_index + 1];
+
+        while (!(parent->flags & UI_AREA_FLAG_CHILD))
+            parent = &parent->childs[0];
+
+        ui_area_current_update(ui_area_current,
+                               parent);
+    }
+}
+
+void ui_area_current_move_up(UIArea **ui_area_current)
+{
+    uint32_t flags = (*ui_area_current)->flags;
+
+    if (flags & UI_AREA_FLAG_LAYOUT_VERTICAL &&
+        (*ui_area_current)->child_index != 0)
+    {
+        UIArea *current_new = &(*ui_area_current)->parent->childs[(*ui_area_current)->child_index - 1];
+        if (!current_new)
+            return;
+
+        while (!(current_new->flags & UI_AREA_FLAG_CHILD))
+            current_new = &current_new->childs[current_new->childs_count - 1];
+
+        ui_area_current_update(ui_area_current,
+                               current_new);
+    }
+    else
+    {
+        UIArea *parent = (*ui_area_current)->parent;
+        if (!parent || parent->child_index == 0xffffffff)
+            return;
+
+        while (!(parent->flags & UI_AREA_FLAG_LAYOUT_VERTICAL))
+        {
+            if (!parent || parent->child_index == 0xffffffff)
+                return;
+            parent = parent->parent;
+        }
+
+        if (parent->child_index == 0)
+            return;
+        parent = &parent->parent->childs[parent->child_index - 1];
+
+        while (!(parent->flags & UI_AREA_FLAG_CHILD))
+            parent = &parent->childs[parent->childs_count - 1];
+
+        ui_area_current_update(ui_area_current,
+                               parent);
+    }
+}
+
+void ui_area_current_move_down(UIArea **ui_area_current)
+{
+    uint32_t flags = (*ui_area_current)->flags;
+
+    if (flags & UI_AREA_FLAG_LAYOUT_VERTICAL &&
+        (*ui_area_current)->child_index != (*ui_area_current)->parent->childs_count - 1)
+    {
+        UIArea *current_new = &(*ui_area_current)->parent->childs[(*ui_area_current)->child_index + 1];
+        if (!current_new)
+            return;
+
+        while (!(current_new->flags & UI_AREA_FLAG_CHILD))
+            current_new = &current_new->childs[0];
+
+        ui_area_current_update(ui_area_current,
+                               current_new);
+    }
+    else
+    {
+        UIArea *parent = (*ui_area_current)->parent;
+        if (!parent || parent->child_index == 0xffffffff)
+            return;
+
+        while (!(parent->flags & UI_AREA_FLAG_LAYOUT_VERTICAL))
+        {
+            if (!parent || parent->child_index == 0xffffffff)
+                return;
+            parent = parent->parent;
+        }
+
+        if (parent->child_index + 1 >= parent->parent->childs_count)
+            return;
+        parent = &parent->parent->childs[parent->child_index + 1];
+
+        while (!(parent->flags & UI_AREA_FLAG_CHILD))
+            parent = &parent->childs[0];
+
+        ui_area_current_update(ui_area_current,
+                               parent);
+    }
 }
 
 void spoor_ui_raylib_object_show(void)
@@ -432,7 +620,7 @@ void spoor_ui_raylib_object_show(void)
                                  250);
 
     _Bool leader = 0;
-    while (!WindowShouldClose())
+    while (!WindowShouldClose() || IsKeyPressed(KEY_ESCAPE))
     {
         BeginDrawing();
         {
@@ -446,7 +634,26 @@ void spoor_ui_raylib_object_show(void)
         }
         EndDrawing();
 
-        char c = GetCharPressed();
+        uint32_t c = GetCharPressed();
+        switch (mode)
+        {
+            case MODE_NORMAL:
+            {
+                switch (c)
+                {
+                    case MODE_INSERT_TOGGLE:
+                    {
+                        mode = MODE_INSERT;
+                    } break;
+                }
+            } break;
+            case MODE_INSERT:
+            {
+                if (IsKeyPressed(KEY_ESCAPE))
+                    mode = MODE_NORMAL;
+            } break;
+        }
+
         if (leader)
         {
             switch (c)
@@ -476,6 +683,22 @@ void spoor_ui_raylib_object_show(void)
                 {
                     ui_area_close(ui_area_current);
                     ui_area_resize_update(ui_area_head);
+                } break;
+                case 's':
+                {
+                    ui_area_current_move_left(&ui_area_current);
+                } break;
+                case 'n':
+                {
+                    ui_area_current_move_down(&ui_area_current);
+                } break;
+                case 'r':
+                {
+                    ui_area_current_move_up(&ui_area_current);
+                } break;
+                case 't':
+                {
+                    ui_area_current_move_right(&ui_area_current);
                 } break;
             }
         }

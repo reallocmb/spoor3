@@ -15,11 +15,9 @@ int64_t spoor_time_compare(SpoorTime *time1, SpoorTime *time2)
 
 int sort_func(const void *data0, const void *data1)
 {
-    int32_t result = spoor_time_compare(&((SpoorObject *)data0)->deadline.end, &((SpoorObject *)data1)->deadline.end);
-#if 1
+    int32_t result = spoor_time_compare(&((SpoorObject *)data0)->schedule.end, &((SpoorObject *)data1)->schedule.end);
     if (result == 0)
-        result = spoor_time_compare(&((SpoorObject *)data0)->schedule.start, &((SpoorObject *)data1)->schedule.start);
-#endif
+        result = spoor_time_compare(&((SpoorObject *)data0)->deadline.start, &((SpoorObject *)data1)->deadline.start);
 
     return result;
 }
@@ -27,20 +25,6 @@ int sort_func(const void *data0, const void *data1)
 void spoor_sort_objects_by_deadline(void)
 {
     qsort(spoor_objects, spoor_objects_count, sizeof(*spoor_objects), sort_func);
-#if 0
-    uint32_t i, j;
-
-    SpoorTime tmp;
-
-    for (i = 1; i < spoor_objects_count; i++)
-    {
-        tmp = spoor_objects[i].deadline.end;
-
-        for (j = i; j > 0 && spoor_time_compare(&spoor_objects[j - 1].deadline.end, &tmp) > 0; j--)
-            spoor_objects[j].deadline.end = spoor_objects[j - 1].deadline.end;
-        spoor_objects[j].deadline.end = tmp;
-    }
-#endif
 }
 
 void spoor_sort_objects(void)
