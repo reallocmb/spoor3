@@ -126,4 +126,10 @@ void test_spoor_time_today_set(SpoorTime *spoor_time);
 void spoor_link_load(uint32_t id);
 void spoor_debug_links(void);
 
+
+
+
+
+int32_t spoor_time_compare_day(SpoorTime *spoor_time0, SpoorTime *spoor_time1);
+
 #endif

@@ -175,20 +175,7 @@ void index_current_check(int32_t *index_current, uint32_t spoor_objects_count)
 void spoor_ui_object_show(void)
 {
     int32_t index_current = 0;
-#if 0
-    SpoorFilter spoor_filter;
-    SpoorObject spoor_objects[500];
-    uint32_t spoor_objects_count = 0;
-    spoor_objects_count = spoor_object_storage_load(spoor_objects, &spoor_filter);
-
-    uint32_t i;
-    for (i = 0; i < spoor_objects_count; i++)
-    {
-        spoor_debug_spoor_object_print(&spoor_objects[i]);
-    }
-
-#else
-#ifndef _WIN32
+#ifdef __unix__
     struct termios old;
     struct termios new;
 
@@ -211,15 +198,6 @@ void spoor_ui_object_show(void)
     spoor_filter.spoor_time.end.hour = -1;
     spoor_filter.spoor_time.end.min = -1;
     spoor_objects_count = spoor_object_storage_load(&spoor_filter);
-#if 0
-    SpoorTimeSpan spoor_span;
-    spoor_span.start.year = 123;
-    spoor_span.start.mon = 9;
-    spoor_span.start.day = 20;
-
-    spoor_span.end = spoor_span.start;
-    spoor_objects_count = spoor_object_storage_load_filter_time_span(spoor_objects, &spoor_span);
-#endif
 
     uint32_t window_rows = 0;
     ui_window_rows_get(&window_rows);
@@ -504,6 +482,5 @@ void spoor_ui_object_show(void)
     printf("\e[m");
     fflush(stdout);
     tcsetattr(STDIN_FILENO, TCSANOW, &old);
-#endif
 #endif
 }

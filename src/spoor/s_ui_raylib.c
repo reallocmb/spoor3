@@ -57,6 +57,8 @@ typedef struct UIArea {
     struct UIArea *parent;
 } UIArea;
 
+time_t week_start_time;
+
 void _padding(uint32_t padding)
 {
     while (padding--)
@@ -155,6 +157,7 @@ char ui_day_names[7][10] = {
 uint32_t ui_day_names_count = 7;
 
 #if 1
+uint32_t time_offset_y = 7;
 void ui_page_days_draw(UIArea *ui_area)
 {
     uint32_t i;
@@ -169,7 +172,7 @@ void ui_page_days_draw(UIArea *ui_area)
                  y,
                  x + width,
                  y + height,
-                 LIGHTGRAY);
+                 BLACK);
 
         DrawTextEx(font_liberation,
                    ui_day_names[i],
@@ -178,8 +181,12 @@ void ui_page_days_draw(UIArea *ui_area)
                    (float)font_liberation.baseSize,
                    2,
                    BLACK);
+        time_t time_in_sec = week_start_time + 60 * 60 * 24 * i;
+        SpoorTime spoor_time = spoor_time_today_get(&time_in_sec);
+        char date[20];
+        sprintf(date, "%d.%d.%d", spoor_time.day, spoor_time.mon + 1, spoor_time.year + 1900);
         DrawTextEx(font_liberation,
-                   "12.08.2023",
+                   date,
                    (Vector2){ x + 5,
                    y + 25 },
                    (float)font_liberation.baseSize,
@@ -195,7 +202,7 @@ void ui_page_days_draw(UIArea *ui_area)
         {
             if (k % 60 == 0)
             {
-                uint32_t hours = k / 60;
+                uint32_t hours = k / 60 + time_offset_y;
                 sprintf(time,
                         "%s%u:00",
                         (hours < 10) ?"0" :"",
@@ -227,6 +234,24 @@ void ui_page_days_draw(UIArea *ui_area)
                          x + width,
                          y + k,
                          LIGHTGRAY);
+        }
+
+        int i;
+        for (i = 0; i < spoor_objects_count; i++)
+        {
+            if (spoor_objects[i].schedule.start.year != -1) 
+            {
+                if (spoor_time_compare_day(&spoor_objects[i].schedule.start, &spoor_time) == 0)
+                {
+                    int minute_start = spoor_objects[i].schedule.start.hour * 60 + spoor_objects[i].schedule.start.min + 60 - time_offset_y * 60;
+                    int minute_end = spoor_objects[i].schedule.end.hour * 60 + spoor_objects[i].schedule.end.min + 60 - time_offset_y * 60;
+                    if (minute_start >= 60)
+                    {
+                        DrawRectangle(x + 45, minute_start, width - 50, minute_end - minute_start, DARKPURPLE);
+                        DrawText(spoor_objects[i].title, x + 50, minute_start, 3, BLACK);
+                    }
+                }
+            }
         }
     }
 }
@@ -415,6 +440,22 @@ void ui_status_bar_draw(void)
                   border_color);
 
     DrawText(mode_str[mode],
+             10,
+             GetScreenHeight() - UI_STATUS_BAR_HEIGHT + UI_STATUS_BAR_HEIGHT / 4,
+             UI_STATUS_BAR_HEIGHT / 4, BLACK);
+}
+
+void ui_status_bar_draw_command_mode(char *buffer_command)
+{
+    Color border_color = GRAY;
+
+    DrawRectangle(0,
+                  GetScreenHeight() - UI_STATUS_BAR_HEIGHT,
+                  GetScreenWidth(),
+                  UI_STATUS_BAR_HEIGHT,
+                  border_color);
+
+    DrawText(buffer_command,
              10,
              GetScreenHeight() - UI_STATUS_BAR_HEIGHT + UI_STATUS_BAR_HEIGHT / 4,
              UI_STATUS_BAR_HEIGHT / 4, BLACK);
@@ -612,12 +653,30 @@ void spoor_ui_raylib_object_show(void)
     ui_area_head->flags = UI_AREA_FLAG_PARENT | UI_AREA_FLAG_CURRENT;
     UIArea *ui_area_current = ui_area_head;
 
+    /* temp */
+    UIArea *ui_area_child = ui_area_child_append(ui_area_current,
+                                                 UI_AREA_FLAG_LAYOUT_VERTICAL |
+                                                 UI_AREA_FLAG_CHILD);
+    ui_area_current_update(&ui_area_current,
+                           ui_area_child);
+    ui_area_resize_update(ui_area_head);
 
     /* load font */
     font_liberation = LoadFontEx("LiberationMono-Regular.ttf",
                                  32,
                                  0,
                                  250);
+
+    spoor_objects_count = spoor_object_storage_load(NULL);
+
+    /* week start date */
+    time_t current_time;
+    week_start_time = time(NULL);
+
+    /* command */
+    char buffer_command[200] = { '#' };
+    uint16_t buffer_command_length = 0;
+    bool command_mode = false;
 
     _Bool leader = 0;
     while (!WindowShouldClose() || IsKeyPressed(KEY_ESCAPE))
@@ -630,30 +689,84 @@ void spoor_ui_raylib_object_show(void)
                 ui_area_resize_update(ui_area_head);
 
             ui_area_draw(ui_area_head);
-            ui_status_bar_draw();
+            if (command_mode)
+                ui_status_bar_draw_command_mode(buffer_command);
+            else
+            {
+                ui_status_bar_draw();
+                DrawText(buffer_command,
+                         150,
+                         GetScreenHeight() - UI_STATUS_BAR_HEIGHT + UI_STATUS_BAR_HEIGHT / 4,
+                         UI_STATUS_BAR_HEIGHT / 4, BLACK);
+            }
         }
         EndDrawing();
 
-        uint32_t c = GetCharPressed();
-        switch (mode)
+        uint32_t input = GetCharPressed();
+        if (input == 0)
         {
-            case MODE_NORMAL:
+            if (IsKeyPressed(KEY_ESCAPE))
+                mode = MODE_NORMAL;
+            if (IsKeyPressed(KEY_BACKSPACE))
             {
-                switch (c)
+                printf("back\n");
+                buffer_command_length -= 2;
+                buffer_command[buffer_command_length] = 0;
+            }
+
+            continue;
+        }
+        else
+            printf("input: %c\n", (char)input);
+        if (mode == MODE_NORMAL)
+        {
+            if (input == MODE_INSERT_TOGGLE)
+                mode = MODE_INSERT;
+        }
+        else /* INSERT mode */
+        {
+            if (input == '\n')
+            {
+                command_mode = true;
+                buffer_command[0] = ':';
+                buffer_command[1] = 0;
+                buffer_command_length = 1;
+            }
+            if (input == 'q')
+            {
+                cursor_move(0, 0);
+                screen_clear();
+
+                break;
+            }
+            switch (input)
+            {
+                case ':':
                 {
-                    case MODE_INSERT_TOGGLE:
-                    {
-                        mode = MODE_INSERT;
-                    } break;
+                    command_mode = true;
+                    buffer_command[0] = ':';
+                    buffer_command[1] = 0;
+                    buffer_command_length = 1;
+                    break;
                 }
-            } break;
-            case MODE_INSERT:
-            {
-                if (IsKeyPressed(KEY_ESCAPE))
-                    mode = MODE_NORMAL;
-            } break;
+                case 'n':
+                {
+                    time_offset_y++;
+                } break;
+
+                case 'r':
+                {
+                    time_offset_y--;
+                } break;
+
+                case 'R':
+                {
+                    spoor_objects_count = spoor_object_storage_load(NULL);
+                } break;
+            }
         }
 
+#if 0
         if (leader)
         {
             switch (c)
@@ -720,6 +833,7 @@ void spoor_ui_raylib_object_show(void)
                 leader = 1;
                 break;
         }
+#endif
     }
 
     CloseWindow();
