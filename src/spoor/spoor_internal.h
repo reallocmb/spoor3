@@ -87,6 +87,8 @@ void spoor_debug_spoor_object_print(SpoorObject *spoor_object);
 
 uint32_t spoor_object_storage_load(SpoorFilter *spoor_filter);
 void spoor_sort_objects(void);
+uint32_t spoor_sort_objects_reposition_up(uint32_t index);
+uint32_t spoor_sort_objects_reposition_down(uint32_t index);
 
 void spoor_object_progress_change(SpoorObject *spoor_object, SpoorStatus status);
 void spoor_storage_save(SpoorObject *spoor_object);
@@ -116,7 +118,10 @@ void spoor_storage_object_remove(SpoorObject *spoor_object);
 void title_format_parse(char *title, char *title_format);
 void time_format_parse_deadline(SpoorTimeSpan *spoor_time, char *time_format);
 void time_format_parse_schedule(SpoorTimeSpan *spoor_time, char *time_format);
-SpoorTime spoor_time_today_get(time_t *time);
+SpoorTime spoor_time_struct_tm_convert(time_t *time);
+struct tm spoor_time_convert_to_struct_tm(SpoorTime *spoor_time);
+void spoor_time_minutes_add(SpoorTime *spoor_time, int32_t minutes);
+void spoor_time_days_add(SpoorTime *spoor_time, int32_t days);
 
 /* for unit tests */
 #ifdef EENHEID_UNIT_TESTS

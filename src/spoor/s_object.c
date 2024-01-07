@@ -47,12 +47,12 @@ void spoor_time_date_create(char *argument,
     /* for static datum like 28.8.2023 */
     if (mode == ':')
     {
-        *date = spoor_time_today_get(&current_time);
+        *date = spoor_time_struct_tm_convert(&current_time);
         date->day = count;
     }
     else if (mode == '.')
     {
-        *date = spoor_time_today_get(&current_time);
+        *date = spoor_time_struct_tm_convert(&current_time);
         date->day = count;
 
         count = 0;
@@ -84,7 +84,7 @@ void spoor_time_date_create(char *argument,
         if (mode == 'd')
         {
             current_time += sign * 60 * 60 * 24 * (int32_t)count;
-            *date = spoor_time_today_get(&current_time);
+            *date = spoor_time_struct_tm_convert(&current_time);
         }
         else
         {

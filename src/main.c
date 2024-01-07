@@ -35,7 +35,11 @@ int main(int argc, char **argv)
     if (argc <= 1)
         spoor_ui_object_show();
     else if (strcmp(argv[1], "--gui") == 0)
+#if 1
+        spoor_ui_xlib_show();
+#else
         spoor_ui_raylib_object_show();
+#endif
     else if (strcmp(argv[1], "-v") == 0)
     {
         printf("SPOOR VERSION: %d.%d.%d\n",

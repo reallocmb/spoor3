@@ -145,13 +145,13 @@ void test_ui_area_draw_func(UIArea *ui_area)
 }
 
 char ui_day_names[7][10] = {
+    "Sunday",
     "Monday",
     "Tuesday",
     "Wednesday",
     "Thursday",
     "Friday",
     "Saturday",
-    "Sunday",
 };
 
 uint32_t ui_day_names_count = 7;
@@ -172,17 +172,19 @@ void ui_page_days_draw(UIArea *ui_area)
                  y,
                  x + width,
                  y + height,
-                 BLACK);
+                 GREEN);
+
+        time_t time_in_sec = week_start_time + 60 * 60 * 24 * i;
+        struct tm *time_tmp = localtime(&time_in_sec);
 
         DrawTextEx(font_liberation,
-                   ui_day_names[i],
+                   ui_day_names[time_tmp->tm_wday],
                    (Vector2){ x + 5,
                    y + 5 },
                    (float)font_liberation.baseSize,
                    2,
                    BLACK);
-        time_t time_in_sec = week_start_time + 60 * 60 * 24 * i;
-        SpoorTime spoor_time = spoor_time_today_get(&time_in_sec);
+        SpoorTime spoor_time = spoor_time_struct_tm_convert(&time_in_sec);
         char date[20];
         sprintf(date, "%d.%d.%d", spoor_time.day, spoor_time.mon + 1, spoor_time.year + 1900);
         DrawTextEx(font_liberation,
@@ -429,7 +431,7 @@ void ui_area_resize_update(UIArea *ui_area_head)
     }
 }
 
-void ui_status_bar_draw(void)
+void ui_status_bar_draw_raylib(void)
 {
     Color border_color = GRAY;
 
@@ -678,12 +680,17 @@ void spoor_ui_raylib_object_show(void)
     uint16_t buffer_command_length = 0;
     bool command_mode = false;
 
+    /* Xlib */
+
+    Texture2D tex = LoadTexture("assets/hand_grab.png");
     _Bool leader = 0;
     while (!WindowShouldClose() || IsKeyPressed(KEY_ESCAPE))
     {
         BeginDrawing();
         {
             ClearBackground(BEIGE);
+
+            DrawTextureV(tex, (Vector2){0.0, 0.0}, GREEN);
 
             if (IsWindowResized())
                 ui_area_resize_update(ui_area_head);
@@ -693,7 +700,7 @@ void spoor_ui_raylib_object_show(void)
                 ui_status_bar_draw_command_mode(buffer_command);
             else
             {
-                ui_status_bar_draw();
+                ui_status_bar_draw_raylib();
                 DrawText(buffer_command,
                          150,
                          GetScreenHeight() - UI_STATUS_BAR_HEIGHT + UI_STATUS_BAR_HEIGHT / 4,
@@ -702,22 +709,88 @@ void spoor_ui_raylib_object_show(void)
         }
         EndDrawing();
 
+
+        uint32_t input = GetCharPressed();
+        if (input != 0)
+            printf("c %d\n", input);
+        input = GetKeyPressed();
+        if (input != 0)
+            printf("k %d\n", input);
+        if (IsKeyDown(KEY_LEFT_CONTROL))
+            printf("true\n");
+
+#if 0
+        uint32_t input = GetCharPressed();
+        if (IsKeyPressed(KEY_ESCAPE))
+            input = 0x1b;
+        if (IsKeyPressed(KEY_BACKSPACE))
+            input = 0x8;
+        if (IsKeyPressed(KEY_LEFT_CONTROL))
+            input = 0x7;
+
+        if (input == 0)
+            continue;
+
+        printf("Input: %c - %x\n", input, input);
+
+        if (mode == MODE_NORMAL)
+        {
+            if (input == 'i')
+                mode = MODE_INSERT;
+        }
+        else /* INSERT mode */
+        {
+            if (input == 0x1b)
+                mode = MODE_NORMAL;
+            else if (IsKeyDown(KEY_LEFT_CONTROL))
+            {
+                switch (input)
+                {
+                    case 'n': time_offset_y++; break;
+                    case 'r': time_offset_y--; break;
+                }
+            }
+            else
+            {
+                buffer_command[buffer_command_length++] = input;
+                buffer_command[buffer_command_length] = 0;
+            }
+
+
+        }
+#endif
+
+
+
+#if 0
         uint32_t input = GetCharPressed();
         if (input == 0)
         {
             if (IsKeyPressed(KEY_ESCAPE))
+            {
                 mode = MODE_NORMAL;
+                continue;
+            }
             if (IsKeyPressed(KEY_BACKSPACE))
             {
                 printf("back\n");
                 buffer_command_length -= 2;
                 buffer_command[buffer_command_length] = 0;
+                continue;
             }
 
-            continue;
+            if (IsKeyPressed(KEY_ENTER))
+            {
+                input = '\n';
+                continue;
+            }
         }
         else
+        {
             printf("input: %c\n", (char)input);
+            printf("buffer_command: %s\n", buffer_command);
+            printf("buffer_command_length: %d\n", buffer_command_length);
+        }
         if (mode == MODE_NORMAL)
         {
             if (input == MODE_INSERT_TOGGLE)
@@ -725,6 +798,8 @@ void spoor_ui_raylib_object_show(void)
         }
         else /* INSERT mode */
         {
+            buffer_command[buffer_command_length++] = input;
+            buffer_command[buffer_command_length] = 0;
             if (input == '\n')
             {
                 command_mode = true;
@@ -765,6 +840,7 @@ void spoor_ui_raylib_object_show(void)
                 } break;
             }
         }
+#endif
 
 #if 0
         if (leader)
