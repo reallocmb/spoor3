@@ -108,7 +108,7 @@ void ui_week_draw(void)
 
         XDrawString(display, window, gc, x + 6, y + 14, ui_week_day_names[tm_time->tm_wday], strlen(ui_week_day_names[tm_time->tm_wday]));
 
-        char date[11];
+        char date[36];
         sprintf(date, "%d.%d.%d",
                 tm_time->tm_mday,
                 tm_time->tm_mon + 1,
@@ -211,10 +211,13 @@ uint32_t buffer_command_counter_detect(uint32_t counter_default)
     uint32_t counter = 0;
     uint32_t i;
 
-    for (i = 0; buffer_command[i] >= 0x30 && buffer_command[i] <= 0x39; i++)
+    for (i = 0; i < buffer_command_count; i++)
     {
-        counter *= 10;
-        counter += buffer_command[i] - 0x30;
+        if (buffer_command[i] >= 0x30 && buffer_command[i] <= 0x39)
+        {
+            counter *= 10;
+            counter += buffer_command[i] - 0x30;
+        }
     }
 
     if (counter == 0)
@@ -227,19 +230,32 @@ uint32_t buffer_command_counter_detect(uint32_t counter_default)
     return counter;
 }
 
+bool mode_command = false;
 void ui_status_bar_draw(void)
 {
     XSetForeground(display, gc, 0x828282);
     XFillRectangle(display, window, gc, 0, window_height - UI_STATUS_BAR_HEIGHT, window_width, UI_STATUS_BAR_HEIGHT);
     XSetForeground(display, gc, 0x000000);
 
-    XDrawString(display, window, gc, 6, window_height - 6, "NORMAL", 6);
 
-    uint32_t buffer_command_offset = 0;
-    if (buffer_command_count > 14)
-        buffer_command_offset = buffer_command_count - 14;
+    if (mode_command)
+    {
+        uint32_t buffer_command_offset = 0;
+        if (buffer_command_count > 200)
+            buffer_command_offset = buffer_command_count - 200;
 
-    XDrawString(display, window, gc, window_width - 120, window_height - 6, buffer_command + buffer_command_offset, buffer_command_count);
+        XDrawString(display, window, gc, 6, window_height - 6, buffer_command + buffer_command_offset, buffer_command_count);
+    }
+    else
+    {
+        XDrawString(display, window, gc, 6, window_height - 6, "NORMAL", 6);
+
+        uint32_t buffer_command_offset = 0;
+        if (buffer_command_count > 14)
+            buffer_command_offset = buffer_command_count - 14;
+
+        XDrawString(display, window, gc, window_width - 120, window_height - 6, buffer_command + buffer_command_offset, buffer_command_count);
+    }
 } 
 
 void draw()
@@ -252,6 +268,8 @@ void draw()
 
 uint32_t ui_week_schedule_select_update(void)
 {
+    /* todo */
+    return 0;
 }
 
 uint32_t ui_week_schedule_first(void)
@@ -390,8 +408,8 @@ void spoor_ui_xlib_show(void)
     ui_week_today_time_update();
 
     spoor_objects_count = spoor_object_storage_load(NULL);
-    ui_week_spoor_object_index_current = ui_week_schedule_first();
     spoor_sort_objects_by_deadline();
+    ui_week_spoor_object_index_current = ui_week_schedule_first();
 
     char buf[256 + 1] = { 0 };
     int bufsz = 128;
@@ -448,73 +466,147 @@ void spoor_ui_xlib_show(void)
                         }
                     }
                 }
-                else if (ui_week_spoor_object_index_grap)
-                {
-                    switch (buf[0])
-                    {
-                        case 'n':
-                        {
-                            ui_week_schedule_move_down();
-                        } break;
-                        case 'r':
-                        {
-                            ui_week_schedule_move_up();
-                        } break;
-                        case 's':
-                        {
-                            ui_week_schedule_move_left();
-                        } break;
-                        case 't':
-                        {
-                            ui_week_schedule_move_right();
-                        } break;
-                        case 'v':
-                        {
-                            ui_week_spoor_object_index_grap = false;
-                        } break;
-                        case 'R':
-                        {
-                            ui_week_schedule_shrink();
-                        } break;
-                        case 'N':
-                        {
-                            ui_week_schedule_grow();
-                        } break;
-                        default:
-                        {
-                            if (strlen(buf) == 1)
-                            {
-                                buffer_command[buffer_command_count++] = buf[0];
-                                buffer_command[buffer_command_count] = 0;
-                            }
-                        } break;
-                    }
-                }
                 else
                 {
-                    switch (buf[0])
+                    if (buf[0] > 0x7f || buf[0] == 0)
+                        break;
+                    buffer_command[buffer_command_count++] = buf[0];
+                    buffer_command[buffer_command_count] = 0;
+
+                    if (mode_command)
                     {
-                        case 'n':
+                        if (strcmp(key_sym_string, "BackSpace") == 0)
                         {
-                            ui_week_schedule_next();
-                        } break;
-                        case 'r':
+                            printf("test backspace\n");
+                            buffer_command_count -= 2;
+                            buffer_command[buffer_command_count] = 0;
+                        }
+                        if (strcmp(key_sym_string, "Return") == 0)
                         {
-                            ui_week_schedule_prev();
-                        } break;
-                        case 'v':
-                        {
-                            ui_week_spoor_object_index_grap = true;
-                        } break;
-                        default:
-                        {
-                            if (strlen(buf) == 1)
+                            buffer_command[buffer_command_count - 1] = 0;
+                            if (strncmp(buffer_command + 1, "q", 1) == 0)
+                                quit = true;
+
+                            if (buffer_command[1] == 'c')
                             {
-                                buffer_command[buffer_command_count++] = buf[0];
-                                buffer_command[buffer_command_count] = 0;
+                                SpoorObject *spoor_object = spoor_object_create(buffer_command + 2);
+                                spoor_storage_save(spoor_object);
+
+                                spoor_sort_objects_append(spoor_object);
+
+                                free(spoor_object);
                             }
-                        } break;
+                            else if (buffer_command[1] == 'e')
+                            {
+                                SpoorObject spoor_object = spoor_objects[ui_week_spoor_object_index_current];
+                                SpoorObject spoor_object_old = spoor_object;
+                                spoor_object_edit(&spoor_object, buffer_command + 2);
+
+                                spoor_storage_change(&spoor_object_old, &spoor_object);
+                                spoor_sort_objects_remove(ui_week_spoor_object_index_current);
+                                spoor_sort_objects_append(&spoor_object);
+                            }
+
+                            printf("escape -----\n");
+                            mode_command = false;
+                            buffer_command[0] = 0;
+                            buffer_command_count = 0;
+                        }
                     }
+                    else
+                    {
+                        bool command_buffer_clear = true;
+                        switch (buffer_command[buffer_command_count - 1])
+                        {
+                            case ':':
+                            {
+                                mode_command = true;
+                                command_buffer_clear = false;
+                                buffer_command[0] = ':';
+                                buffer_command[1] = 0;
+                                buffer_command_count = 1;
+                            } break;
+                            default:
+                            {
+                                command_buffer_clear = false;
+                            } break;
+                        }
+                        if (ui_week_spoor_object_index_grap)
+                        {
+                            switch (buffer_command[buffer_command_count - 1])
+                            {
+                                case 'n':
+                                {
+                                    ui_week_schedule_move_down();
+                                } break;
+                                case 'r':
+                                {
+                                    ui_week_schedule_move_up();
+                                } break;
+                                case 's':
+                                {
+                                    ui_week_schedule_move_left();
+                                } break;
+                                case 't':
+                                {
+                                    ui_week_schedule_move_right();
+                                } break;
+                                case 'v':
+                                {
+                                    ui_week_spoor_object_index_grap = false;
+                                } break;
+                                case 'R':
+                                {
+                                    ui_week_schedule_shrink();
+                                } break;
+                                case 'N':
+                                {
+                                    ui_week_schedule_grow();
+                                } break;
+                                default:
+                                {
+                                    command_buffer_clear = false;
+                                } break;
+                            }
+                        }
+                        else
+                        {
+                            if (strncmp(buffer_command, "dd", 2) == 0)
+                            {
+                                spoor_storage_delete(&spoor_objects[ui_week_spoor_object_index_current]);
+                                spoor_sort_objects_remove(ui_week_spoor_object_index_current);
+                                buffer_command[0] = 0;
+                                buffer_command_count = 0;
+                                break;
+                            }
+
+                            switch (buffer_command[buffer_command_count - 1])
+                            {
+                                case 'n':
+                                {
+                                    ui_week_schedule_next();
+                                } break;
+                                case 'r':
+                                {
+                                    ui_week_schedule_prev();
+                                } break;
+                                case 'v':
+                                {
+                                    ui_week_spoor_object_index_grap = true;
+                                } break;
+                                default:
+                                {
+                                    command_buffer_clear = false;
+                                } break;
+                            }
+                        }
+                        if (command_buffer_clear)
+                        {
+                            buffer_command[0] = 0;
+                            buffer_command_count = 0;
+                        }
+                    }
+
                 }
 
                 printf("key down\n");

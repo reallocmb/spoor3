@@ -1,3 +1,4 @@
+#if 0
 #include"spoor_internal.h"
 
 #include<stdio.h>
@@ -914,3 +915,4 @@ void spoor_ui_raylib_object_show(void)
 
     CloseWindow();
 }
+#endif

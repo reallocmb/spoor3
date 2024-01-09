@@ -86,9 +86,6 @@ void mdb_func_error_check(int error, char *func_name, int line, char *file);
 void spoor_debug_spoor_object_print(SpoorObject *spoor_object);
 
 uint32_t spoor_object_storage_load(SpoorFilter *spoor_filter);
-void spoor_sort_objects(void);
-uint32_t spoor_sort_objects_reposition_up(uint32_t index);
-uint32_t spoor_sort_objects_reposition_down(uint32_t index);
 
 void spoor_object_progress_change(SpoorObject *spoor_object, SpoorStatus status);
 void spoor_storage_save(SpoorObject *spoor_object);
@@ -107,6 +104,11 @@ void spoor_time_span_create(SpoorTimeSpan *spoor_time_span, char *command);
 int64_t spoor_time_compare(SpoorTime *time1, SpoorTime *time2);
 void spoor_sort_objects_by_title(void);
 void spoor_sort_objects_by_deadline(void);
+void spoor_sort_objects_append(SpoorObject *spoor_object);
+void spoor_sort_objects(void);
+uint32_t spoor_sort_objects_reposition_up(uint32_t index);
+uint32_t spoor_sort_objects_reposition_down(uint32_t index);
+void spoor_sort_objects_remove(uint32_t index);
 
 void spoor_time_deadline_create(char *argument, uint32_t argument_length, SpoorTimeSpan *spoor_time);
 
