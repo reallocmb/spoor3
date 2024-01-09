@@ -211,8 +211,6 @@ void spoor_ui_object_show(void)
     uint8_t buffer_command_length = 0;
 
     bool command_mode = false;
-    char arguments[200] = { 0 };
-    uint8_t arguments_pos = 0;
     while (1)
     {
         /* sorting */
@@ -243,13 +241,13 @@ void spoor_ui_object_show(void)
             cursor_move(0, 3 + i);
 
             /* relativ numbers and shit */
-            if (i == (uint32_t)index_current)
+            if ((int32_t)i == index_current)
                 printf("\e[2;30;46m");
             if (modus_num == 1)
             {
-                if (i == index_current)
+                if ((int32_t)i == index_current)
                     _i = i;
-                else if (i > index_current)
+                else if ((int32_t)i > index_current)
                     _i = i - index_current;
                 else
                     _i = index_current - i;
@@ -272,8 +270,6 @@ void spoor_ui_object_show(void)
         /* print status bar */
         cursor_move(0, window_rows - 2);
         fprintf(stdout, "---------------------------------------------------------------------------------------------------------------");
-        cursor_move(0, window_rows -1);
-        fprintf(stdout, "%s", arguments);
         cursor_move(0, window_rows);
         fprintf(stdout,
                 "-- Elements: [%d - %d](%d) %.*s",

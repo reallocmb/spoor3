@@ -5,7 +5,7 @@ extern_lib = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -lraygui
 
 compiler = gcc $(develop_flags)
 
-version = gnu89
+version = gnu99
 
 test_flags = -Wall -Wextra -std=$(version) -g
 develop_flags = -Wall -Wextra -std=$(version) -g

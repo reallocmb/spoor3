@@ -15,9 +15,9 @@ int64_t spoor_time_compare(SpoorTime *time1, SpoorTime *time2)
 
 int sort_func(const void *data0, const void *data1)
 {
-    int32_t result = spoor_time_compare(&((SpoorObject *)data0)->schedule.end, &((SpoorObject *)data1)->schedule.end);
+    int32_t result = spoor_time_compare(&((SpoorObject *)data0)->schedule.start, &((SpoorObject *)data1)->schedule.start);
     if (result == 0)
-        result = spoor_time_compare(&((SpoorObject *)data0)->deadline.start, &((SpoorObject *)data1)->deadline.start);
+        result = spoor_time_compare(&((SpoorObject *)data0)->deadline.end, &((SpoorObject *)data1)->deadline.end);
 
     return result;
 }
@@ -29,7 +29,6 @@ void spoor_sort_objects_by_deadline(void)
 
 void spoor_sort_objects(void)
 {
-
     uint32_t i;
     SpoorObject temp;
     while (spoor_objects_count--)
@@ -44,4 +43,86 @@ void spoor_sort_objects(void)
             }
         }
     }
+}
+
+uint32_t spoor_sort_objects_reposition_up(uint32_t index)
+{
+    if (index == 0)
+        return index;
+
+    uint32_t i = index;
+    while (--i)
+    {
+        if (sort_func((void *)&spoor_objects[i], (void *)&spoor_objects[index]) > 0)
+        {
+            SpoorObject tmp;
+            tmp = spoor_objects[i];
+            spoor_objects[i] = spoor_objects[index];
+            spoor_objects[index] = tmp;
+            index = i;
+        }
+        else
+            break;
+    }
+
+    return index;
+}
+
+uint32_t spoor_sort_objects_reposition_down(uint32_t index)
+{
+    if (index == spoor_objects_count - 1)
+        return index;
+
+    uint32_t i;
+    for (i = index + 1; i < spoor_objects_count; i++)
+    {
+        if (sort_func((void *)&spoor_objects[index], (void *)&spoor_objects[i]) > 0)
+        {
+            SpoorObject tmp;
+            tmp = spoor_objects[i];
+            spoor_objects[i] = spoor_objects[index];
+            spoor_objects[index] = tmp;
+            index = i;
+        }
+        else
+            break;
+    }
+    return index;
+} 
+
+void spoor_sort_objects_append(SpoorObject *spoor_object)
+{
+    uint32_t i;
+    for (i = 0; i < spoor_objects_count; i++)
+    {
+        if (spoor_objects[i].schedule.start.hour != -1 &&
+            spoor_objects[i].schedule.end.hour != -1)
+            break;
+    }
+
+    for (; i < spoor_objects_count; i++)
+    {
+        if (sort_func((void *)spoor_object, (void *)&spoor_objects[i]) <= 0)
+        {
+            SpoorObject tmp;
+
+            for (; i < spoor_objects_count; i++)
+            {
+                tmp = spoor_objects[i];
+                spoor_objects[i] = *spoor_object;
+                *spoor_object = tmp;
+            }
+        }
+    }
+
+    spoor_objects[spoor_objects_count++] = *spoor_object;
+}
+
+void spoor_sort_objects_remove(uint32_t index)
+{
+    uint32_t i;
+    for (i = index; i < spoor_objects_count - 1; i++)
+        spoor_objects[i] = spoor_objects[i + 1];
+
+    spoor_objects_count--;
 }
