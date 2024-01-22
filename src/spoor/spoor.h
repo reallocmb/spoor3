@@ -32,6 +32,7 @@ void spoor_ui_object_show(void);
 void spoor_ui_graphapp_object_show(void);
 void spoor_ui_raylib_object_show(void);
 void spoor_ui_xlib_show(void);
+void spoor_ui_xlib_show_rw_(void);
 void spoor_ui_win32_show(void);
 
 /* Debugging */

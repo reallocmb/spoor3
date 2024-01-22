@@ -10,17 +10,34 @@
 #include<X11/Xutil.h>
 #include<X11/extensions/Xdbe.h>
 
-#define FPS 30
+XdbeBackBuffer back_buffer;
+#define FPS 60
 
 #define WINDOW_NAME "SPOOR ~ BY ~ REALLOCMB"
 
 #define UI_STATUS_BAR_HEIGHT 20
 
 #define BACKGROUND_COLOR 0xd3b083
+#define SCHEDULE_ITEM_COLOR 0x556644
 
 GC gc;
 Display *display;
 Window window;
+
+uint32_t schedule_item_color_get(SpoorType type)
+{
+    switch (type)
+    {
+        case TYPE_TASK: return 0x6d6d6d; break;
+        case TYPE_PROJECT: return 0x8551ff; break;
+        case TYPE_EVENT: return 0xfff851; break;
+        case TYPE_APPOINTMENT: return 0x5151ff; break;
+        case TYPE_GOAL: return 0xff51fc; break;
+        case TYPE_HABIT: return 0xff5151; break;
+    }
+
+    return 0x00000000;
+}
 
 void window_create(void)
 {
@@ -85,8 +102,8 @@ uint32_t ui_week_days_count = 5;
 void ui_week_draw(void)
 {
     /*
-    XDrawString(display, window, gc, 6, 14, "Datum - Datum", 13);
-    XDrawLine(display, window, gc, 0, 20, window_width, 20);
+    XDrawString(display, back_buffer, gc, 6, 14, "Datum - Datum", 13);
+    XDrawLine(display, back_buffer, gc, 0, 20, window_width, 20);
     */
 
     uint32_t i;
@@ -106,7 +123,7 @@ void ui_week_draw(void)
         if (day_offset == 0)
             XSetForeground(display, gc, 0xaa0099);
 
-        XDrawString(display, window, gc, x + 6, y + 14, ui_week_day_names[tm_time->tm_wday], strlen(ui_week_day_names[tm_time->tm_wday]));
+        XDrawString(display, back_buffer, gc, x + 6, y + 14, ui_week_day_names[tm_time->tm_wday], strlen(ui_week_day_names[tm_time->tm_wday]));
 
         char date[36];
         sprintf(date, "%d.%d.%d",
@@ -114,12 +131,12 @@ void ui_week_draw(void)
                 tm_time->tm_mon + 1,
                 tm_time->tm_year + 1900);
 
-        XDrawString(display, window, gc, x + 6, y + 2 * 14, date, strlen(date));
+        XDrawString(display, back_buffer, gc, x + 6, y + 2 * 14, date, strlen(date));
 
         XSetForeground(display, gc, 0x000000);
 
         /* separition line between week_days */
-        XDrawLine(display, window, gc, x + width, y, x + width, y + height);
+        XDrawLine(display, back_buffer, gc, x + width, y, x + width, y + height);
 
         /* offset */
         y += 60;
@@ -138,18 +155,18 @@ void ui_week_draw(void)
                 sprintf(time,
                         "%s%u:00",
                         (hours < 10) ?"0" :"", hours);
-                XDrawString(display, window, gc, x + 4, y + k + 14, time, strlen(time));
+                XDrawString(display, back_buffer, gc, x + 4, y + k + 14, time, strlen(time));
 
-                XDrawLine(display, window, gc, x, y + k, x + width, y + k);
+                XDrawLine(display, back_buffer, gc, x, y + k, x + width, y + k);
             }
             else if (k % 30 == 0)
             {
-                XDrawLine(display, window, gc, x + 40, y + k, x + width, y + k);
+                XDrawLine(display, back_buffer, gc, x + 40, y + k, x + width, y + k);
             }
             else
             {
                 XSetForeground(display, gc, 0x643c64);
-                XDrawLine(display, window, gc, x + 40, y + k, x + width - 1, y + k);
+                XDrawLine(display, back_buffer, gc, x + 40, y + k, x + width - 1, y + k);
                 XSetForeground(display, gc, 0x000000);
             }
         }
@@ -169,27 +186,28 @@ void ui_week_draw(void)
 #if 1
                     if (minute_start >= 60)
                     {
-                        XSetForeground(display, gc, 0x556644);
-                        XFillRectangle(display, window, gc, x + 45, minute_start, width - 50, minute_end - minute_start);
+                        uint32_t color = schedule_item_color_get(spoor_objects[j].type);
+                        XSetForeground(display, gc, color);
+                        XFillRectangle(display, back_buffer, gc, x + 45, minute_start, width - 50, minute_end - minute_start);
                         XSetForeground(display, gc, 0x000000);
-                        XDrawString(display, window, gc, x + 50, minute_start + 14, spoor_objects[j].title, strlen(spoor_objects[j].title));
+                        XDrawString(display, back_buffer, gc, x + 50, minute_start + 14, spoor_objects[j].title, strlen(spoor_objects[j].title));
 
                         char time_format_deadline[50] = { 0 };
                         time_format_parse_deadline(&spoor_objects[j].deadline, time_format_deadline);
-                        XDrawString(display, window, gc, x + 50, minute_start + 2 * 14, time_format_deadline, strlen(time_format_deadline));
+                        XDrawString(display, back_buffer, gc, x + 50, minute_start + 2 * 14, time_format_deadline, strlen(time_format_deadline));
 
                         if (j == ui_week_spoor_object_index_current)
                         {
                             if (ui_week_spoor_object_index_grap)
                             {
                                 XSetForeground(display, gc, 0x0000ff);
-                                XDrawRectangle(display, window, gc, x + 45, minute_start, width - 50, minute_end - minute_start);
+                                XDrawRectangle(display, back_buffer, gc, x + 45, minute_start, width - 50, minute_end - minute_start);
                                 XSetForeground(display, gc, 0x000000);
                             }
                             else 
                             {
-                                XSetForeground(display, gc, 0xff0000);
-                                XDrawRectangle(display, window, gc, x + 45, minute_start, width - 50, minute_end - minute_start);
+                                XSetForeground(display, gc, 0xffffff);
+                                XDrawRectangle(display, back_buffer, gc, x + 45, minute_start, width - 50, minute_end - minute_start);
                                 XSetForeground(display, gc, 0x000000);
                             }
                         }
@@ -234,7 +252,7 @@ bool mode_command = false;
 void ui_status_bar_draw(void)
 {
     XSetForeground(display, gc, 0x828282);
-    XFillRectangle(display, window, gc, 0, window_height - UI_STATUS_BAR_HEIGHT, window_width, UI_STATUS_BAR_HEIGHT);
+    XFillRectangle(display, back_buffer, gc, 0, window_height - UI_STATUS_BAR_HEIGHT, window_width, UI_STATUS_BAR_HEIGHT);
     XSetForeground(display, gc, 0x000000);
 
 
@@ -244,23 +262,25 @@ void ui_status_bar_draw(void)
         if (buffer_command_count > 200)
             buffer_command_offset = buffer_command_count - 200;
 
-        XDrawString(display, window, gc, 6, window_height - 6, buffer_command + buffer_command_offset, buffer_command_count);
+        XDrawString(display, back_buffer, gc, 6, window_height - 6, buffer_command + buffer_command_offset, buffer_command_count);
     }
     else
     {
-        XDrawString(display, window, gc, 6, window_height - 6, "NORMAL", 6);
+        XDrawString(display, back_buffer, gc, 6, window_height - 6, "NORMAL", 6);
 
         uint32_t buffer_command_offset = 0;
         if (buffer_command_count > 14)
             buffer_command_offset = buffer_command_count - 14;
 
-        XDrawString(display, window, gc, window_width - 120, window_height - 6, buffer_command + buffer_command_offset, buffer_command_count);
+        XDrawString(display, back_buffer, gc, window_width - 120, window_height - 6, buffer_command + buffer_command_offset, buffer_command_count);
     }
 } 
 
 void draw()
 {
+    /*
     XClearWindow(display, window);
+    */
     window_size_current();
     ui_week_draw();
     ui_status_bar_draw();
@@ -327,6 +347,34 @@ void ui_week_schedule_prev(void)
         return;
     if (ui_week_schedule_check(&spoor_objects[ui_week_spoor_object_index_current - counter]))
         ui_week_spoor_object_index_current -= counter;
+}
+
+void ui_week_schedule_index_right(void)
+{
+    uint32_t i;
+    for (i = ui_week_spoor_object_index_current + 1; i < spoor_objects_count; i++)
+    {
+        if (spoor_objects[i].schedule.start.day != spoor_objects[ui_week_spoor_object_index_current].schedule.start.day)
+        {
+            ui_week_spoor_object_index_current = i;
+            return;
+        }
+    }
+}
+
+void ui_week_schedule_index_left(void)
+{
+    uint32_t i;
+    printf("index_current %d\n", ui_week_spoor_object_index_current);
+    for (i = ui_week_spoor_object_index_current - 1; i >= 0; i--)
+    {
+        if (spoor_objects[i].schedule.start.day != spoor_objects[ui_week_spoor_object_index_current].schedule.start.day)
+        {
+            ui_week_spoor_object_index_current = i;
+            printf("index_current %d\n", ui_week_spoor_object_index_current);
+            return;
+        }
+    }
 }
 
 void ui_week_schedule_move_down(void)
@@ -411,11 +459,24 @@ void spoor_ui_xlib_show(void)
     spoor_sort_objects_by_deadline();
     ui_week_spoor_object_index_current = ui_week_schedule_first();
 
+    /* swap buffers */
+    int major_version_return, minor_version_return;
+    if(XdbeQueryExtension(display, &major_version_return, &minor_version_return)) {
+        printf("XDBE version %d.%d\n", major_version_return, minor_version_return);
+    } else {
+        fprintf(stderr, "XDBE is not supported!!!1\n");
+        exit(1);
+    }
+
+    back_buffer = XdbeAllocateBackBufferName(display, window, 0);
+
     char buf[256 + 1] = { 0 };
     int bufsz = 128;
     XEvent event;
     int quit = 0;
     bool control_down = false;
+
+
     while (!quit)
     {
         XNextEvent(display, &event);
@@ -590,6 +651,14 @@ void spoor_ui_xlib_show(void)
                                 {
                                     ui_week_schedule_prev();
                                 } break;
+                                case 's':
+                                {
+                                    ui_week_schedule_index_left();
+                                } break;
+                                case 't':
+                                {
+                                    ui_week_schedule_index_right();
+                                } break;
                                 case 'v':
                                 {
                                     ui_week_spoor_object_index_grap = true;
@@ -631,8 +700,18 @@ void spoor_ui_xlib_show(void)
                 printf("string  %s\n", test);
             } break;
         }
+        /* clear */
+        XSetForeground(display, gc, BACKGROUND_COLOR);
+        XFillRectangle(display, back_buffer, gc, 0, 0, window_width, window_height);
+
         draw();
-        XFlush(display);
+
+        /* swap buffers */
+        XdbeSwapInfo swap_info;
+        swap_info.swap_window = window;
+        swap_info.swap_action = 0;
+        XdbeSwapBuffers(display, &swap_info, 1);
+
         usleep(1000 * 1000 / FPS);
     }
 }

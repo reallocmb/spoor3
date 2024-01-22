@@ -3,7 +3,8 @@
 
 #include<time.h>
 #include<stdint.h>
-#include<stdbool.h>
+
+#define SPOOR_APPLICATION_NAME "SPOOR ~ by reallocmb"
 
 typedef enum {
     STATUS_NOT_STARTED,

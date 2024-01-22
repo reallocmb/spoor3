@@ -1,6 +1,6 @@
 program = spoor
 
-extern_lib = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -lraygui
+extern_lib = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -lraygui -lXext -lcairo
 #extern_lib = -lraylibw -lopengl32 -lgdi32 -lwinmm
 
 compiler = gcc $(develop_flags)
