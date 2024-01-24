@@ -7,6 +7,7 @@
 #include<string.h>
 #include<X11/Xlib.h>
 #include<X11/Xutil.h>
+#include <time.h>
 #include<unistd.h>
 
 #define FPS 60
@@ -41,10 +42,13 @@ struct UICalendar {
     uint8_t days_count;
     int32_t today_offset;
     uint32_t hour_offset;
+    uint32_t spoor_objects_index;
+    bool spoor_objects_grab;
 } UICalendarGlobal = {
     .days_count = 7,
     .today_offset = 0,
     .hour_offset = 7,
+    .spoor_objects_grab = false,
 };
 
 const char ui_calendar_week_day_names[7][10] = {
@@ -62,7 +66,6 @@ const char ui_calendar_week_day_names[7][10] = {
 #define DAY_SEC 86400
 
 #define UI_STATUS_BAR_HEIGHT 20
-
 
 void xlib_window_create(void)
 {
@@ -157,6 +160,14 @@ void xlib_line_vertical_draw(uint32_t px, uint32_t py, uint32_t height, uint32_t
         XlibHandleGlobal.bits[y * XlibHandleGlobal.window_width + px] = color;
 }
 
+void xlib_rectangle_lines_draw(uint32_t x, uint32_t y, uint32_t width, uint32_t height, uint32_t color)
+{
+    xlib_line_horizontal_draw(x, y, width, color);
+    xlib_line_horizontal_draw(x, y + height, width, color);
+    xlib_line_vertical_draw(x, y, height, color);
+    xlib_line_vertical_draw(x + width, y, height, color);
+}
+
 void xlib_rectangle_draw(uint32_t x, uint32_t y, uint32_t width, uint32_t height, uint32_t color)
 {
     uint32_t width_max = x + width;
@@ -236,6 +247,39 @@ void xlib_text_draw(const char *buffer, uint32_t x, uint32_t y, uint32_t color)
     }
 }
 
+uint32_t ui_calendar_schedule_item_color(SpoorType type)
+{
+    switch (type)
+    {
+        case TYPE_TASK: return 0x6d6d6d; break;
+        case TYPE_PROJECT: return 0x8551ff; break;
+        case TYPE_EVENT: return 0xfff851; break;
+        case TYPE_APPOINTMENT: return 0x5151ff; break;
+        case TYPE_GOAL: return 0xff51fc; break;
+        case TYPE_HABIT: return 0xff5151; break;
+    }
+
+    return 0x000000;
+}
+
+void ui_calendar_spoor_objects_pointer_init(void)
+{
+    time_t time_today_sec = time(NULL) + UICalendarGlobal.today_offset * DAY_SEC;
+    struct tm *time_today_tm = localtime(&time_today_sec);
+    SpoorTime spoor_time = *(SpoorTime *)time_today_tm;
+
+    uint32_t i;
+    for (i = 0; i < spoor_objects_count; i++)
+    {
+        if (spoor_objects[i].schedule.start.day >= spoor_time.day &&
+            spoor_objects[i].schedule.start.mon >= spoor_time.mon &&
+            spoor_objects[i].schedule.start.year >= spoor_time.year)
+        {
+            UICalendarGlobal.spoor_objects_index = i;
+        }
+    }
+}
+
 #if 1
 void xlib_ui_calendar_draw(void)
 {
@@ -307,7 +351,7 @@ void xlib_ui_calendar_draw(void)
             }
         }
         /* draw spoor objects scheudle rectangles */
-#if 0
+#if 1
         printf("spoor_objects_count: %d\n", spoor_objects_count);
         uint32_t j;
         uint32_t fs = 10;
@@ -316,7 +360,7 @@ void xlib_ui_calendar_draw(void)
         {
             if (spoor_objects[j].schedule.start.year != -1)
             {
-                if (spoor_time_compare_day(&spoor_objects[j].schedule.start, (SpoorTime *)time_today_tm))
+                if (spoor_time_compare_day(&spoor_objects[j].schedule.start, (SpoorTime *)time_today_tm) == 0)
                 {
                     int minute_start = spoor_objects[j].schedule.start.hour * 60 + spoor_objects[j].schedule.start.min + 60 - UICalendarGlobal.hour_offset * 60;
                     int minute_end = spoor_objects[j].schedule.end.hour * 60 + spoor_objects[j].schedule.end.min + 60 - UICalendarGlobal.hour_offset * 60;
@@ -325,7 +369,7 @@ void xlib_ui_calendar_draw(void)
                         /*
                         uint32_t color = schedule_item_color_get(spoor_objects[j].type);
                         */
-                        uint32_t color = 0x48abdd;
+                        uint32_t color = ui_calendar_schedule_item_color(spoor_objects[j].type);
 
                         xlib_rectangle_draw(x + 45, minute_start, width - 50, minute_end - minute_start, color);
                         xlib_text_draw(spoor_objects[j].title, x + 50, minute_start + 2, 0x000000);
@@ -333,6 +377,9 @@ void xlib_ui_calendar_draw(void)
                         char time_format_deadline[50] = { 0 };
                         time_format_parse_deadline(&spoor_objects[j].deadline, time_format_deadline);
                         xlib_text_draw(time_format_deadline, x + 50, minute_start + 2 + fs + 2, 0x000000);
+
+                        if (j == UICalendarGlobal.spoor_objects_index)
+                            xlib_rectangle_lines_draw(x + 45, minute_start, width - 50, minute_end - minute_start, 0x000000);
 
                         /*
                         if (j == ui_week_spoor_object_index_current)
@@ -454,9 +501,8 @@ void spoor_ui_xlib_show_rw_(void)
     spoor_objects_count = spoor_object_storage_load(NULL);
 
     xlib_window_create();
+    ui_calendar_spoor_objects_pointer_init();
 
     while (XlibHandleGlobal.running)
-    {
         xlib_events();
-    }
 }
