@@ -8,6 +8,7 @@
 
 int main(int argc, char **argv)
 {
+    spoor_ui_font_init("font.otf", 14);
     /* change current directory to database directory */
 #ifdef _WIN32
     char *home_directory = getenv("USERPROFILE");

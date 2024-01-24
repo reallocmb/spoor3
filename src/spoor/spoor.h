@@ -34,6 +34,7 @@ void spoor_ui_raylib_object_show(void);
 void spoor_ui_xlib_show(void);
 void spoor_ui_xlib_show_rw_(void);
 void spoor_ui_win32_show(void);
+void spoor_ui_font_init(const char *path, uint32_t font_size);
 
 /* Debugging */
 void spoor_debug_spoor_object_print(SpoorObject *spoor_object); /* print an SpoorObject to the console */
