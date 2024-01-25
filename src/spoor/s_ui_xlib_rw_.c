@@ -538,7 +538,7 @@ void xlib_text_draw(const char *buffer, uint32_t x, uint32_t y, uint32_t color)
     /*
     printf("y: %d metri_hei: %d\n", y, metrics_height / 4 * 3);
     */
-    if (y > XlibHandleGlobal.window_height)
+    if (y + metrics_height / 4 > XlibHandleGlobal.window_height)
     {
         return;
     }
