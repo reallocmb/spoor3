@@ -1,3 +1,4 @@
+#if 0
 #include"spoor_internal.h"
 
 #include<stdio.h>
@@ -715,3 +716,4 @@ void spoor_ui_xlib_show(void)
         usleep(1000 * 1000 / FPS);
     }
 }
+#endif

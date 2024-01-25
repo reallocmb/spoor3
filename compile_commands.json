@@ -19,9 +19,9 @@
       "obj/main.o",
       "src/main.c"
     ],
-    "directory": "/home/mb/spoor3",
-    "file": "/home/mb/spoor3/src/main.c",
-    "output": "/home/mb/spoor3/obj/main.o"
+    "directory": "/home/mb/ws/c/spoor3",
+    "file": "/home/mb/ws/c/spoor3/src/main.c",
+    "output": "/home/mb/ws/c/spoor3/obj/main.o"
   },
   {
     "arguments": [
@@ -43,9 +43,9 @@
       "obj/s_test.o",
       "src/s_test.c"
     ],
-    "directory": "/home/mb/spoor3",
-    "file": "/home/mb/spoor3/src/s_test.c",
-    "output": "/home/mb/spoor3/obj/s_test.o"
+    "directory": "/home/mb/ws/c/spoor3",
+    "file": "/home/mb/ws/c/spoor3/src/s_test.c",
+    "output": "/home/mb/ws/c/spoor3/obj/s_test.o"
   },
   {
     "arguments": [
@@ -67,9 +67,9 @@
       "obj/redbas/redbas.o",
       "src/redbas/redbas.c"
     ],
-    "directory": "/home/mb/spoor3",
-    "file": "/home/mb/spoor3/src/redbas/redbas.c",
-    "output": "/home/mb/spoor3/obj/redbas/redbas.o"
+    "directory": "/home/mb/ws/c/spoor3",
+    "file": "/home/mb/ws/c/spoor3/src/redbas/redbas.c",
+    "output": "/home/mb/ws/c/spoor3/obj/redbas/redbas.o"
   },
   {
     "arguments": [
@@ -91,9 +91,9 @@
       "obj/spoor/s_debug.o",
       "src/spoor/s_debug.c"
     ],
-    "directory": "/home/mb/spoor3",
-    "file": "/home/mb/spoor3/src/spoor/s_debug.c",
-    "output": "/home/mb/spoor3/obj/spoor/s_debug.o"
+    "directory": "/home/mb/ws/c/spoor3",
+    "file": "/home/mb/ws/c/spoor3/src/spoor/s_debug.c",
+    "output": "/home/mb/ws/c/spoor3/obj/spoor/s_debug.o"
   },
   {
     "arguments": [
@@ -115,9 +115,9 @@
       "obj/spoor/s_link.o",
       "src/spoor/s_link.c"
     ],
-    "directory": "/home/mb/spoor3",
-    "file": "/home/mb/spoor3/src/spoor/s_link.c",
-    "output": "/home/mb/spoor3/obj/spoor/s_link.o"
+    "directory": "/home/mb/ws/c/spoor3",
+    "file": "/home/mb/ws/c/spoor3/src/spoor/s_link.c",
+    "output": "/home/mb/ws/c/spoor3/obj/spoor/s_link.o"
   },
   {
     "arguments": [
@@ -139,9 +139,9 @@
       "obj/spoor/s_object.o",
       "src/spoor/s_object.c"
     ],
-    "directory": "/home/mb/spoor3",
-    "file": "/home/mb/spoor3/src/spoor/s_object.c",
-    "output": "/home/mb/spoor3/obj/spoor/s_object.o"
+    "directory": "/home/mb/ws/c/spoor3",
+    "file": "/home/mb/ws/c/spoor3/src/spoor/s_object.c",
+    "output": "/home/mb/ws/c/spoor3/obj/spoor/s_object.o"
   },
   {
     "arguments": [
@@ -163,9 +163,9 @@
       "obj/spoor/s_sort.o",
       "src/spoor/s_sort.c"
     ],
-    "directory": "/home/mb/spoor3",
-    "file": "/home/mb/spoor3/src/spoor/s_sort.c",
-    "output": "/home/mb/spoor3/obj/spoor/s_sort.o"
+    "directory": "/home/mb/ws/c/spoor3",
+    "file": "/home/mb/ws/c/spoor3/src/spoor/s_sort.c",
+    "output": "/home/mb/ws/c/spoor3/obj/spoor/s_sort.o"
   },
   {
     "arguments": [
@@ -187,9 +187,9 @@
       "obj/spoor/s_span_time.o",
       "src/spoor/s_span_time.c"
     ],
-    "directory": "/home/mb/spoor3",
-    "file": "/home/mb/spoor3/src/spoor/s_span_time.c",
-    "output": "/home/mb/spoor3/obj/spoor/s_span_time.o"
+    "directory": "/home/mb/ws/c/spoor3",
+    "file": "/home/mb/ws/c/spoor3/src/spoor/s_span_time.c",
+    "output": "/home/mb/ws/c/spoor3/obj/spoor/s_span_time.o"
   },
   {
     "arguments": [
@@ -211,9 +211,9 @@
       "obj/spoor/s_storage.o",
       "src/spoor/s_storage.c"
     ],
-    "directory": "/home/mb/spoor3",
-    "file": "/home/mb/spoor3/src/spoor/s_storage.c",
-    "output": "/home/mb/spoor3/obj/spoor/s_storage.o"
+    "directory": "/home/mb/ws/c/spoor3",
+    "file": "/home/mb/ws/c/spoor3/src/spoor/s_storage.c",
+    "output": "/home/mb/ws/c/spoor3/obj/spoor/s_storage.o"
   },
   {
     "arguments": [
@@ -235,9 +235,9 @@
       "obj/spoor/s_time.o",
       "src/spoor/s_time.c"
     ],
-    "directory": "/home/mb/spoor3",
-    "file": "/home/mb/spoor3/src/spoor/s_time.c",
-    "output": "/home/mb/spoor3/obj/spoor/s_time.o"
+    "directory": "/home/mb/ws/c/spoor3",
+    "file": "/home/mb/ws/c/spoor3/src/spoor/s_time.c",
+    "output": "/home/mb/ws/c/spoor3/obj/spoor/s_time.o"
   },
   {
     "arguments": [
@@ -259,9 +259,9 @@
       "obj/spoor/s_ui.o",
       "src/spoor/s_ui.c"
     ],
-    "directory": "/home/mb/spoor3",
-    "file": "/home/mb/spoor3/src/spoor/s_ui.c",
-    "output": "/home/mb/spoor3/obj/spoor/s_ui.o"
+    "directory": "/home/mb/ws/c/spoor3",
+    "file": "/home/mb/ws/c/spoor3/src/spoor/s_ui.c",
+    "output": "/home/mb/ws/c/spoor3/obj/spoor/s_ui.o"
   },
   {
     "arguments": [
@@ -283,9 +283,9 @@
       "obj/spoor/s_ui_font.o",
       "src/spoor/s_ui_font.c"
     ],
-    "directory": "/home/mb/spoor3",
-    "file": "/home/mb/spoor3/src/spoor/s_ui_font.c",
-    "output": "/home/mb/spoor3/obj/spoor/s_ui_font.o"
+    "directory": "/home/mb/ws/c/spoor3",
+    "file": "/home/mb/ws/c/spoor3/src/spoor/s_ui_font.c",
+    "output": "/home/mb/ws/c/spoor3/obj/spoor/s_ui_font.o"
   },
   {
     "arguments": [
@@ -307,9 +307,9 @@
       "obj/spoor/s_ui_graphapp.o",
       "src/spoor/s_ui_graphapp.c"
     ],
-    "directory": "/home/mb/spoor3",
-    "file": "/home/mb/spoor3/src/spoor/s_ui_graphapp.c",
-    "output": "/home/mb/spoor3/obj/spoor/s_ui_graphapp.o"
+    "directory": "/home/mb/ws/c/spoor3",
+    "file": "/home/mb/ws/c/spoor3/src/spoor/s_ui_graphapp.c",
+    "output": "/home/mb/ws/c/spoor3/obj/spoor/s_ui_graphapp.o"
   },
   {
     "arguments": [
@@ -331,9 +331,9 @@
       "obj/spoor/s_ui_raylib.o",
       "src/spoor/s_ui_raylib.c"
     ],
-    "directory": "/home/mb/spoor3",
-    "file": "/home/mb/spoor3/src/spoor/s_ui_raylib.c",
-    "output": "/home/mb/spoor3/obj/spoor/s_ui_raylib.o"
+    "directory": "/home/mb/ws/c/spoor3",
+    "file": "/home/mb/ws/c/spoor3/src/spoor/s_ui_raylib.c",
+    "output": "/home/mb/ws/c/spoor3/obj/spoor/s_ui_raylib.o"
   },
   {
     "arguments": [
@@ -355,9 +355,9 @@
       "obj/spoor/s_ui_win32.o",
       "src/spoor/s_ui_win32.c"
     ],
-    "directory": "/home/mb/spoor3",
-    "file": "/home/mb/spoor3/src/spoor/s_ui_win32.c",
-    "output": "/home/mb/spoor3/obj/spoor/s_ui_win32.o"
+    "directory": "/home/mb/ws/c/spoor3",
+    "file": "/home/mb/ws/c/spoor3/src/spoor/s_ui_win32.c",
+    "output": "/home/mb/ws/c/spoor3/obj/spoor/s_ui_win32.o"
   },
   {
     "arguments": [
@@ -379,9 +379,9 @@
       "obj/spoor/s_ui_xlib.o",
       "src/spoor/s_ui_xlib.c"
     ],
-    "directory": "/home/mb/spoor3",
-    "file": "/home/mb/spoor3/src/spoor/s_ui_xlib.c",
-    "output": "/home/mb/spoor3/obj/spoor/s_ui_xlib.o"
+    "directory": "/home/mb/ws/c/spoor3",
+    "file": "/home/mb/ws/c/spoor3/src/spoor/s_ui_xlib.c",
+    "output": "/home/mb/ws/c/spoor3/obj/spoor/s_ui_xlib.o"
   },
   {
     "arguments": [
@@ -403,8 +403,8 @@
       "obj/spoor/s_ui_xlib_rw_.o",
       "src/spoor/s_ui_xlib_rw_.c"
     ],
-    "directory": "/home/mb/spoor3",
-    "file": "/home/mb/spoor3/src/spoor/s_ui_xlib_rw_.c",
-    "output": "/home/mb/spoor3/obj/spoor/s_ui_xlib_rw_.o"
+    "directory": "/home/mb/ws/c/spoor3",
+    "file": "/home/mb/ws/c/spoor3/src/spoor/s_ui_xlib_rw_.c",
+    "output": "/home/mb/ws/c/spoor3/obj/spoor/s_ui_xlib_rw_.o"
   }
 ]
