@@ -8,6 +8,7 @@
 
 int main(int argc, char **argv)
 {
+    spoor_ui_font_init("font.otf", 14);
     /* change current directory to database directory */
 #ifdef _WIN32
     char *home_directory = getenv("USERPROFILE");
@@ -39,7 +40,7 @@ int main(int argc, char **argv)
 #ifdef _WIN32
         spoor_ui_win32_show();
 #else
-        spoor_ui_xlib_show();
+        spoor_ui_xlib_show_rw_();
 #endif
     }
     else if (strcmp(argv[1], "-v") == 0)

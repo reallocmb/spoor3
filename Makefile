@@ -1,6 +1,6 @@
 program = spoor
 
-extern_lib = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -lraygui
+extern_lib = `pkg-config --cflags --libs freetype2` -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -lraygui -lXext -lcairo
 #extern_lib = -lraylibw -lopengl32 -lgdi32 -lwinmm
 
 compiler = gcc $(develop_flags)
@@ -34,7 +34,7 @@ $(binary): $(object_all)
 	$(compiler) -Llib -o $(binary) $(object_all) $(extern_lib) 
 
 $(object_dir)/%.o: $(source_dir)/%.c
-	$(compiler) -Iinc -c -o $@ $<
+	$(compiler) -Iinc `pkg-config --cflags freetype2` -c -o $@ $<
 
 $(objdirs):
 	@mkdir -p $@

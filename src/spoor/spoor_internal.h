@@ -3,7 +3,11 @@
 
 #include<time.h>
 #include<stdint.h>
-#include<stdbool.h>
+
+#include<ft2build.h>
+#include FT_FREETYPE_H
+
+#define SPOOR_APPLICATION_NAME "SPOOR ~ by reallocmb"
 
 typedef enum {
     STATUS_NOT_STARTED,
@@ -134,9 +138,18 @@ void spoor_link_load(uint32_t id);
 void spoor_debug_links(void);
 
 
+typedef struct UIFont {
+    FT_Face face;
+    FT_Library ft;
+    FT_Int major, minor, patch;
+    FT_Error err;
+    uint32_t font_size;
+} UIFont;
 
+extern struct UIFont UIFontGlobal;
 
+void ui_font_size_set(uint32_t font_size);
 
-int32_t spoor_time_compare_day(SpoorTime *spoor_time0, SpoorTime *spoor_time1);
+int32_t spoor_time_compare_day(SpoorTime *spoor_time0, SpoorTime *spoor_time1); /* Returns 0 if (spoor_time0) and (spoor_time1) are equal. Returns a positiv number if (spoor_time0) is bigger than (spoor_time1). Returns a negativ number if (spoor_time1 is bigger than (spoor_time0) */
 
 #endif
