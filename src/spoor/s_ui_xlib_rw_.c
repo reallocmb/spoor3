@@ -338,6 +338,10 @@ void mode_command_process(void)
         spoor_sort_objects_remove(UICalendarGlobal.spoor_objects_index);
         spoor_sort_objects_append(&spoor_object);
     }
+    else if (UICalendarGlobal.buffer_command[1] == 'q')
+    {
+        exit(0);
+    }
 }
 
 void xlib_render(void);
@@ -365,10 +369,13 @@ void ui_calendar_input(void)
         {
             if (strncmp(XlibHandleGlobal.key_sym_str, "BackSpace", 9) == 0)
             {
-                UICalendarGlobal.buffer_command_size -= 2;
-                UICalendarGlobal.buffer_command[UICalendarGlobal.buffer_command_size] = 0;
+                if (UICalendarGlobal.buffer_command_size != 1)
+                {
+                    UICalendarGlobal.buffer_command_size -= 2;
+                    UICalendarGlobal.buffer_command[UICalendarGlobal.buffer_command_size] = 0;
+                }
             }
-            if (strncmp(XlibHandleGlobal.key_sym_str, "Return", 6) == 0)
+            else if (strncmp(XlibHandleGlobal.key_sym_str, "Return", 6) == 0)
             {
                 mode_command_process();
                 UICalendarGlobal.mode_command = false;
@@ -411,7 +418,7 @@ void ui_calendar_input(void)
         {
             UICalendarGlobal.mode_command = true;
             UICalendarGlobal.buffer_command[0] = ':';
-            UICalendarGlobal.buffer_command[1] = 'c';
+            UICalendarGlobal.buffer_command[1] = 'e';
             UICalendarGlobal.buffer_command[2] = 0;
             UICalendarGlobal.buffer_command_size = 2;
 
