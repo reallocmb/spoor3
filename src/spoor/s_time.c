@@ -1,6 +1,7 @@
 #include"spoor_internal.h"
 
 #include<time.h>
+#include<stdbool.h>
 
 struct tm spoor_time_convert_to_struct_tm(SpoorTime *spoor_time)
 {
@@ -22,7 +23,7 @@ SpoorTime spoor_time_struct_tm_convert(time_t *time)
 
 int32_t spoor_time_compare_day(SpoorTime *spoor_time0, SpoorTime *spoor_time1)
 {
-    return spoor_time0->day - spoor_time1->day + spoor_time0->mon - spoor_time1->mon + spoor_time0->year - spoor_time1->year;
+    return spoor_time0->day - spoor_time1->day + (spoor_time0->mon - spoor_time1->mon) * 32 + (spoor_time0->year - spoor_time1->year) * 32 * 13;
 }
 
 void spoor_time_minutes_add(SpoorTime *spoor_time, int32_t minutes)

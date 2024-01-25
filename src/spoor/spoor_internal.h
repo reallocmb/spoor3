@@ -3,6 +3,7 @@
 
 #include<time.h>
 #include<stdint.h>
+#include<stdbool.h>
 
 #include<ft2build.h>
 #include FT_FREETYPE_H

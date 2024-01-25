@@ -1,6 +1,6 @@
 program = spoor
 
-extern_lib = `pkg-config --cflags --libs freetype2` -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -lraygui -lXext -lcairo
+extern_lib = `pkg-config --cflags --libs freetype2` -lX11
 #extern_lib = -lraylibw -lopengl32 -lgdi32 -lwinmm
 
 compiler = gcc $(develop_flags)
@@ -62,14 +62,12 @@ install: clean all
 	sudo cp $(binary) $(install_dir)
 
 tests: compiler := gcc $(test_flags)
-tests: clean all run
+tests: all
+	gcc -Isrc tests/test.c -o bin/tests tests/eenheid/*.c $(extern_lib)
+	bin/tests
 
 release: 
 	compiler = gcc $(release_flags)
 
 remove:
 	sudo rm $(install_dir)/$(program)
-
-test: all
-	gcc -Isrc/spoor -Isrc/redbas tests/test.c -o bin/test obj/redbas/redbas.o -leenheid -DEENHEID_UNIT_TESTS
-	./bin/test

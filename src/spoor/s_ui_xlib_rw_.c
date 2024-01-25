@@ -74,6 +74,8 @@ const char ui_calendar_week_day_names[7][10] = {
 
 #define UI_STATUS_BAR_HEIGHT 20
 
+int32_t alphaBlend(int32_t colorA, int32_t colorB, uint8_t alpha);
+
 void xlib_window_create(void)
 {
     XlibHandleGlobal.display = XOpenDisplay(NULL);
@@ -492,7 +494,7 @@ void xlib_rectangle_lines_draw(uint32_t x, uint32_t y, uint32_t width, uint32_t 
     xlib_line_vertical_draw(x + width, y, height, color);
 }
 
-void xlib_rectangle_draw(uint32_t x, uint32_t y, uint32_t width, uint32_t height, uint32_t color)
+void xlib_rectangle_draw(uint32_t x, uint32_t y, uint32_t width, uint32_t height, uint32_t color, uint32_t alpha)
 {
     uint32_t width_max = x + width;
     uint32_t height_max = y + height;
@@ -504,7 +506,7 @@ void xlib_rectangle_draw(uint32_t x, uint32_t y, uint32_t width, uint32_t height
     uint32_t i, j;
     for (i = y; i < height_max; i++)
         for (j = x; j < width_max; j++)
-            XlibHandleGlobal.bits[i * XlibHandleGlobal.window_width + j] = color;
+            XlibHandleGlobal.bits[i * XlibHandleGlobal.window_width + j] = alphaBlend(color, XlibHandleGlobal.bits[i * XlibHandleGlobal.window_width + j], alpha);
 }
 
 int32_t alphaBlend(int32_t colorA, int32_t colorB, uint8_t alpha) {
@@ -638,8 +640,12 @@ void xlib_ui_calendar_draw(void)
 
         struct tm *time_today_tm = localtime(&time_today_sec);
 
+        /*
         if (i + UICalendarGlobal.today_offset == 0)
             xlib_rectangle_draw(x + 2, y + 2, width - 4, 56, 0x5454bb);
+            */
+        if (i + UICalendarGlobal.today_offset == 0)
+            xlib_rectangle_draw(x, y, width, height, 0x552588, 150);
 
         xlib_text_draw(ui_calendar_week_day_names[time_today_tm->tm_wday],
                     x + 6, y + 6, 0x000000);
@@ -708,7 +714,7 @@ void xlib_ui_calendar_draw(void)
                     {
                         uint32_t color = ui_calendar_schedule_item_color(spoor_objects[j].type);
 
-                        xlib_rectangle_draw(x + 45, minute_start, width - 50, minute_end - minute_start, color);
+                        xlib_rectangle_draw(x + 45, minute_start, width - 50, minute_end - minute_start, color, 50);
                         xlib_text_draw(spoor_objects[j].title, x + 50, minute_start + 2, 0x000000);
 
                         char time_format_deadline[50] = { 0 };
@@ -739,7 +745,7 @@ void xlib_ui_status_bar_draw(void)
 {
     xlib_rectangle_draw(0, XlibHandleGlobal.window_height - UI_STATUS_BAR_HEIGHT,
                         XlibHandleGlobal.window_width, UI_STATUS_BAR_HEIGHT,
-                        0x828282);
+                        0x552588, 50);
 
     printf("BUFFER COMMAND: %s\n", UICalendarGlobal.buffer_command);
     ui_font_size_set(16);
