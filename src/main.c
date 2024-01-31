@@ -8,7 +8,11 @@
 
 int main(int argc, char **argv)
 {
+#if 0
     spoor_ui_font_init("font.otf", 14);
+#else
+    spoor_ui_font_init("/usr/share/fonts/adobe-source-code-pro/SourceCodePro-Medium.otf", 14);
+#endif
     /* change current directory to database directory */
 #ifdef _WIN32
     char *home_directory = getenv("USERPROFILE");
@@ -34,8 +38,6 @@ int main(int argc, char **argv)
     free(database_path);
 
     if (argc <= 1)
-        spoor_ui_object_show();
-    else if (strcmp(argv[1], "--gui") == 0)
     {
 #ifdef _WIN32
         spoor_ui_win32_show();
@@ -43,6 +45,8 @@ int main(int argc, char **argv)
         spoor_ui_xlib_show_rw_();
 #endif
     }
+    else if (strcmp(argv[1], "-t") == 0)
+        spoor_ui_object_show();
     else if (strcmp(argv[1], "-v") == 0)
     {
         printf("SPOOR VERSION: %d.%d.%d\n",
