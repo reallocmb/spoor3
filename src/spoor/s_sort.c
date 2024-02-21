@@ -18,6 +18,8 @@ int sort_func(const void *data0, const void *data1)
     int32_t result = spoor_time_compare(&((SpoorObject *)data0)->schedule.start, &((SpoorObject *)data1)->schedule.start);
     if (result == 0)
         result = spoor_time_compare(&((SpoorObject *)data0)->deadline.end, &((SpoorObject *)data1)->deadline.end);
+    if (result == 0)
+        result = ((SpoorObject *)data0)->status - ((SpoorObject *)data1)->status;
 
     return result;
 }

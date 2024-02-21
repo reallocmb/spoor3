@@ -10,6 +10,16 @@
 
 #define SPOOR_APPLICATION_NAME "SPOOR ~ by reallocmb"
 
+typedef uint8_t u8;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint64_t u64;
+
+typedef int8_t i8;
+typedef int16_t i16;
+typedef int32_t i32;
+typedef int64_t i64;
+
 typedef enum {
     STATUS_NOT_STARTED,
     STATUS_IN_PROGRESS,
