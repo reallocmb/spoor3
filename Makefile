@@ -42,8 +42,8 @@ $(objdirs):
 run: all
 	./$(binary)
 
-rung: all
-	./$(binary) --gui
+runt: all
+	./$(binary) -t
 
 gdb:
 	gdb ./$(binary)
