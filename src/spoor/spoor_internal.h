@@ -20,11 +20,26 @@ typedef int16_t i16;
 typedef int32_t i32;
 typedef int64_t i64;
 
+extern const u32 STATUS_BITS[3];
+#define FILTER_STATUS_NOT_STARTED 0b1
+#define FILTER_STATUS_IN_PROGRESS 0b10
+#define FILTER_STATUS_COMPLETED 0b100
+#define FILTER_STATUS_ALL 0b111
+
 typedef enum {
     STATUS_NOT_STARTED,
     STATUS_IN_PROGRESS,
     STATUS_COMPLETED,
 } SpoorStatus;
+
+extern const u32 TYPE_BITS[6];
+#define FILTER_TYPE_TASK 0b1
+#define FILTER_TYPE_PROJECT 0b10
+#define FILTER_TYPE_EVENT 0b100
+#define FILTER_TYPE_APPOINTMENT 0b1000
+#define FILTER_TYPE_GOAL 0b10000
+#define FILTER_TYPE_HABIT 0b100000
+#define FILTER_TYPE_ALL 0b111111
 
 typedef enum {
     TYPE_TASK,
@@ -89,10 +104,9 @@ extern SpoorLink link_global;
 
 typedef struct {
     SpoorTimeSpan spoor_time;
+    u32 types;
+    u32 status;
 } SpoorFilter;
-
-typedef struct {
-} SpoorSort;
 
 SpoorObject *spoor_object_create(char *arguments);
 void spoor_object_edit(SpoorObject *spoor_object, char *arguments);
@@ -160,7 +174,10 @@ typedef struct UIFont {
 extern struct UIFont UIFontGlobal;
 
 void ui_font_size_set(uint32_t font_size);
+uint32_t arguments_next(char **arguments, uint32_t arguments_last_length);
 
 int32_t spoor_time_compare_day(SpoorTime *spoor_time0, SpoorTime *spoor_time1); /* Returns 0 if (spoor_time0) and (spoor_time1) are equal. Returns a positiv number if (spoor_time0) is bigger than (spoor_time1). Returns a negativ number if (spoor_time1 is bigger than (spoor_time0) */
+u32 spoor_filter_use(SpoorObject *spoor_objects, SpoorFilter *spoor_filter);
+void spoor_filter_change(SpoorFilter *spoor_filter, char *arguments);
 
 #endif
