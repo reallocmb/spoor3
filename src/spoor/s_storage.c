@@ -5,6 +5,21 @@
 #include<string.h>
 #include<dirent.h>
 
+const u32 STATUS_BITS[3] = {
+    0b1,
+    0b10,
+    0b100,
+};
+
+const u32 TYPE_BITS[6] = {
+    0b1,
+    0b10,
+    0b100,
+    0b1000,
+    0b10000,
+    0b100000,
+};
+
 SpoorObject spoor_objects[500];
 uint32_t spoor_objects_count;
 
@@ -182,9 +197,17 @@ uint32_t spoor_object_storage_load(SpoorFilter *spoor_filter)
                 redbas_db_restore(db, &spoor_objects[items_total], sizeof(*spoor_objects));
                 /* skip temporly deleted elements */
                 if (spoor_objects[items_total].id == SPOOR_OBJECT_DELETED_ID)
+                {
+                    items_total--;
+                    continue;
+                }
+
+                /* filter types */
+#if 0
+                if (!(spoor_filter->types & TYPE_BITS[spoor_objects[items_total].type]))
                     items_total--;
 
-                /* filter */
+#endif
 #if 0
                 printf("stc: %ld\n%ld\n", spoor_time_compare(&spoor_objects[items_total + i].deadline.end, &spoor_filter->spoor_time.start),
                         spoor_time_compare(&spoor_objects[items_total + i].deadline.end, &spoor_filter->spoor_time.end));

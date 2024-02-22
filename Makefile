@@ -5,7 +5,7 @@ extern_lib = `pkg-config --cflags --libs freetype2` -lX11
 
 compiler = gcc $(develop_flags)
 
-version = gnu99
+version = gnu89
 
 test_flags = -Wall -Wextra -std=$(version) -g
 develop_flags = -Wall -Wextra -std=$(version) -g

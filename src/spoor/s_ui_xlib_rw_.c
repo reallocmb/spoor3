@@ -27,16 +27,18 @@ typedef struct UIArea {
     struct UIArea *prev;
     struct UIArea *next;
     void (*drawing_func)(struct UIArea *ui_area);
-    void (*key_input_func)(struct UIArea *ui_area);
+    void (*key_input_func)(void);
 } UIArea;
 
 void ui_area_blank_draw_func(UIArea *ui_area);
 
-void ui_area_key_input_default_func(UIArea *ui_area);
+void ui_area_key_input_default_func(void);
 void xlib_ui_calendar_draw(UIArea *ui_area);
-void ui_calendar_input(UIArea *ui_area);
+void ui_calendar_input(void);
 void ui_list_draw_func(UIArea *ui_area);
-void ui_list_key_input_func(UIArea *ui_area);
+void ui_list_key_input_func(void);
+void ui_help_draw_func(UIArea *ui_area);
+void ui_help_key_input_func(void);
 
 enum {
     MODE_DEFAULT,
@@ -104,8 +106,13 @@ struct XlibHandle {
 
 struct UIList {
     u32 index_current;
+    SpoorFilter spoor_filter;
 } UIListGlobal = {
     .index_current = 0,
+    .spoor_filter = {
+        .types = FILTER_TYPE_ALL,
+        .status = FILTER_STATUS_ALL,
+    },
 };
 
 struct UICalendar {
@@ -403,6 +410,10 @@ void mode_command_process(u32 spoor_object_index)
         spoor_sort_objects_remove(spoor_object_index);
         spoor_sort_objects_append(&spoor_object);
     }
+    else if (XlibHandleGlobal.buffer_command[1] == 'f')
+    {
+        spoor_filter_change(&UIListGlobal.spoor_filter, XlibHandleGlobal.buffer_command + 2);
+    }
     else if (XlibHandleGlobal.buffer_command[1] == 'q')
     {
         exit(0);
@@ -410,7 +421,7 @@ void mode_command_process(u32 spoor_object_index)
 }
 
 void xlib_render(void);
-void ui_calendar_input(UIArea *ui_area)
+void ui_calendar_input(void)
 {
     if (XlibHandleGlobal.key_input_buffer[0] == 0x1b)
     {
@@ -652,8 +663,9 @@ void xlib_text_draw(const char *buffer, u32 x, u32 y, u32 color)
         FT_Bitmap bitmap = UIFontGlobal.face->glyph->bitmap;
 
 
-        for (size_t i = 0; i < bitmap.rows; i++) {
-            for (size_t j = 0; j < bitmap.width; j++) {
+        size_t i, j;
+        for (i = 0; i < bitmap.rows; i++) {
+            for (j = 0; j < bitmap.width; j++) {
                 int alpha =
                     bitmap.buffer[i * bitmap.pitch + j];
                 alpha = 255 - alpha;
@@ -1146,7 +1158,7 @@ void ui_area_blank_draw_func(UIArea *ui_area)
     xlib_text_draw(id_str, ui_area->x + 10, ui_area->y + 10, 0xffffff);
 }
 
-void ui_area_key_input_default_func(UIArea *ui_area)
+void ui_area_key_input_default_func(void)
 {
 }
 
@@ -1311,6 +1323,17 @@ void default_input(void)
         return;
     }
 
+    if (strncmp(XlibHandleGlobal.buffer_command + XlibHandleGlobal.buffer_command_size - 2, "lh", 2) == 0)
+    {
+        printf("lh - command\n");
+        XlibHandleGlobal.ui_area_feet->drawing_func = ui_help_draw_func;
+        XlibHandleGlobal.ui_area_feet->key_input_func = ui_help_key_input_func;
+        XlibHandleGlobal.buffer_command[0] = 0;
+        XlibHandleGlobal.buffer_command_size = 0;
+        xlib_render();
+        return;
+    }
+
     bool buffer_command_clear = true;
 
     switch (XlibHandleGlobal.buffer_command[XlibHandleGlobal.buffer_command_size - 1])
@@ -1421,8 +1444,12 @@ void ui_list_draw_func(UIArea *ui_area)
     i32 index = 0;
     char index_buf[50] = { 0 };
 
+    /* filter */
+    SpoorObject spoor_objects_new[500];
+    u32 spoor_objects_new_count = spoor_filter_use(spoor_objects_new, &UIListGlobal.spoor_filter);
+
     u32 i;
-    for (i = 0; i < spoor_objects_count; i++)
+    for (i = 0; i < spoor_objects_new_count; i++)
     {
         index = UIListGlobal.index_current - i;
         if (index == 0)
@@ -1433,24 +1460,29 @@ void ui_list_draw_func(UIArea *ui_area)
         sprintf(index_buf, "%d", index);
         xlib_text_draw(index_buf, ui_area->x + 10, ui_area->y + 24 + i * line_height + 2, ui_list_font_color);
 
-        xlib_text_draw(spoor_objects[i].title, ui_area->x + 30, ui_area->y + 24 + i * line_height + 2, ui_list_font_color);
+        xlib_text_draw(spoor_objects_new[i].title, ui_area->x + 30, ui_area->y + 24 + i * line_height + 2, ui_list_font_color);
 
-        time_format_parse_deadline(&spoor_objects[i].deadline, time_format_deadline);
+        time_format_parse_deadline(&spoor_objects_new[i].deadline, time_format_deadline);
         xlib_text_draw(time_format_deadline, ui_area->x + 230, ui_area->y + 24 + i * line_height + 2, ui_list_font_color);
 
-        time_format_parse_schedule(&spoor_objects[i].schedule, time_format_schedule);
+        time_format_parse_schedule(&spoor_objects_new[i].schedule, time_format_schedule);
         xlib_text_draw(time_format_schedule, ui_area->x + 350, ui_area->y + 24 + i * line_height + 2, ui_list_font_color);
 
-        xlib_text_draw(UI_LIST_STATUS[spoor_objects[i].status], ui_area->x + 500, ui_area->y + 24 + i * line_height + 2, UI_LIST_STATUS_COLOR[spoor_objects[i].status]);
+        xlib_text_draw(UI_LIST_STATUS[spoor_objects_new[i].status], ui_area->x + 500, ui_area->y + 24 + i * line_height + 2, UI_LIST_STATUS_COLOR[spoor_objects_new[i].status]);
 
-        xlib_text_draw(UI_LIST_TYPES[spoor_objects[i].type], ui_area->x + 590, ui_area->y + 24 + i * line_height + 2, ui_list_font_color);
+        char str[50];
+        sprintf(str, "%d", spoor_objects_new[i].type);
+        /*
+        xlib_text_draw(str, ui_area->x + 590, ui_area->y + 24 + i * line_height + 2, ui_list_font_color);
+        */
+        xlib_text_draw(UI_LIST_TYPES[spoor_objects_new[i].type], ui_area->x + 590, ui_area->y + 24 + i * line_height + 2, ui_list_font_color);
 
-        xlib_text_draw(spoor_objects[i].parent_title, ui_area->x + 680, ui_area->y + 24 + i * line_height + 2, ui_list_font_color);
+        xlib_text_draw(spoor_objects_new[i].parent_title, ui_area->x + 680, ui_area->y + 24 + i * line_height + 2, ui_list_font_color);
     }
     ui_font_size_set(14);
 }
 
-void ui_list_key_input_func(UIArea *ui_area)
+void ui_list_key_input_func(void)
 {
     if (XlibHandleGlobal.key_input_buffer[0] == 0x1b)
     {
@@ -1527,6 +1559,16 @@ void ui_list_key_input_func(UIArea *ui_area)
 
             buffer_command_clear = false;
         } break;
+        case 'f':
+        {
+            XlibHandleGlobal.mode_command = true;
+            XlibHandleGlobal.buffer_command[0] = ':';
+            XlibHandleGlobal.buffer_command[1] = 'f';
+            XlibHandleGlobal.buffer_command[2] = 0;
+            XlibHandleGlobal.buffer_command_size = 2;
+
+            buffer_command_clear = false;
+        } break;
         case 'n':
         {
             u32 counter = buffer_command_counter_detect_rw(1);
@@ -1550,6 +1592,22 @@ void ui_list_key_input_func(UIArea *ui_area)
     }
 
     xlib_render();
+}
+
+void ui_help_draw_func(UIArea *ui_area)
+{
+    xlib_rectangle_draw(ui_area->x, ui_area->y, ui_area->width, ui_area->height, 0x6644bb, 22);
+    xlib_text_draw("HELP PAGE", ui_area->x + ui_area->width / 2 - 60, ui_area->y + 20, 0xffffff);
+
+    xlib_line_horizontal_draw(ui_area->x, ui_area->y + 38, ui_area->width, 0xffffff);
+
+    ui_font_size_set(12);
+    xlib_text_draw("UICalendar", ui_area->x + 20, ui_area->y + 44, 0xffffff);
+    ui_font_size_set(14);
+}
+
+void ui_help_key_input_func(void)
+{
 }
 
 void xlib_events(void)
@@ -1591,7 +1649,7 @@ void xlib_events(void)
                     if (XlibHandleGlobal.key_input_buffer[0] == 0)
                         input_special_keys();
                     else
-                        XlibHandleGlobal.ui_area_feet->key_input_func(XlibHandleGlobal.ui_area_feet);
+                        XlibHandleGlobal.ui_area_feet->key_input_func();
                 }
                 else
                     default_input();
