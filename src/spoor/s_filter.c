@@ -1,6 +1,6 @@
 #include"spoor_internal.h"
 
-u32 spoor_filter_use(SpoorObject *spoor_objects_new, SpoorFilter *spoor_filter)
+u32 spoor_filter_use(u32 *spoor_objects_indexes_orginal, SpoorFilter *spoor_filter)
 {
     u32 i, j;
     for (i = 0, j = 0; i < spoor_objects_count; i++)
@@ -9,7 +9,7 @@ u32 spoor_filter_use(SpoorObject *spoor_objects_new, SpoorFilter *spoor_filter)
             continue;
         if (!(spoor_filter->status & STATUS_BITS[spoor_objects[i].status]))
             continue;
-        spoor_objects_new[j] = spoor_objects[i];
+        spoor_objects_indexes_orginal[j] = i;
         j++;
     }
 

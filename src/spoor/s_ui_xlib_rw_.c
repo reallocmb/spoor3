@@ -105,14 +105,17 @@ struct XlibHandle {
 };
 
 struct UIList {
-    u32 index_current;
     SpoorFilter spoor_filter;
+    u32 index_current;
+    u32 spoor_objects_indexes_orginal[500];
+    u32 spoor_objects_indexes_orginal_count;
 } UIListGlobal = {
     .index_current = 0,
     .spoor_filter = {
         .types = FILTER_TYPE_ALL,
         .status = FILTER_STATUS_ALL,
     },
+    .spoor_objects_indexes_orginal_count = 0,
 };
 
 struct UICalendar {
@@ -445,7 +448,6 @@ void ui_calendar_input(void)
         XlibHandleGlobal.buffer_command[XlibHandleGlobal.buffer_command_size++] = XlibHandleGlobal.key_input_buffer[0];
         XlibHandleGlobal.buffer_command[XlibHandleGlobal.buffer_command_size] = 0;
         printf("BUFFER COMMAND: %s\n", XlibHandleGlobal.buffer_command);
-
 
         if (XlibHandleGlobal.mode_command)
         {
@@ -801,7 +803,7 @@ void xlib_ui_calendar_draw(UIArea *ui_area)
                 if (spoor_time_compare_day(&spoor_objects[j].schedule.start, (SpoorTime *)time_today_tm) == 0)
                 {
                     int minute_start = spoor_objects[j].schedule.start.hour * 60 + spoor_objects[j].schedule.start.min - UICalendarGlobal.hour_offset * 60;
-                    int minute_end = spoor_objects[j].schedule.end.hour * 60 + spoor_objects[j].schedule.end.min - UICalendarGlobal.hour_offset * 60;
+                    int minute_end = spoor_objects[j].schedule.end.hour * 60 + spoor_objects[j].schedule.end.min - UICalendarGlobal.hour_offset * 60 + 1;
                     printf("(%d, %d)\n", minute_start, minute_end);
                     u32 color_outline = 0x000000;
 
@@ -1445,11 +1447,10 @@ void ui_list_draw_func(UIArea *ui_area)
     char index_buf[50] = { 0 };
 
     /* filter */
-    SpoorObject spoor_objects_new[500];
-    u32 spoor_objects_new_count = spoor_filter_use(spoor_objects_new, &UIListGlobal.spoor_filter);
-
+    UIListGlobal.spoor_objects_indexes_orginal_count = spoor_filter_use(UIListGlobal.spoor_objects_indexes_orginal,
+                                                                        &UIListGlobal.spoor_filter);
     u32 i;
-    for (i = 0; i < spoor_objects_new_count; i++)
+    for (i = 0; i < UIListGlobal.spoor_objects_indexes_orginal_count; i++)
     {
         index = UIListGlobal.index_current - i;
         if (index == 0)
@@ -1457,27 +1458,29 @@ void ui_list_draw_func(UIArea *ui_area)
         else if (index < 1)
             index = ~index + 1;
 
+        SpoorObject *spoor_object = &spoor_objects[UIListGlobal.spoor_objects_indexes_orginal[i]];
+
         sprintf(index_buf, "%d", index);
         xlib_text_draw(index_buf, ui_area->x + 10, ui_area->y + 24 + i * line_height + 2, ui_list_font_color);
 
-        xlib_text_draw(spoor_objects_new[i].title, ui_area->x + 30, ui_area->y + 24 + i * line_height + 2, ui_list_font_color);
+        xlib_text_draw(spoor_object->title, ui_area->x + 30, ui_area->y + 24 + i * line_height + 2, ui_list_font_color);
 
-        time_format_parse_deadline(&spoor_objects_new[i].deadline, time_format_deadline);
+        time_format_parse_deadline(&spoor_object->deadline, time_format_deadline);
         xlib_text_draw(time_format_deadline, ui_area->x + 230, ui_area->y + 24 + i * line_height + 2, ui_list_font_color);
 
-        time_format_parse_schedule(&spoor_objects_new[i].schedule, time_format_schedule);
+        time_format_parse_schedule(&spoor_object->schedule, time_format_schedule);
         xlib_text_draw(time_format_schedule, ui_area->x + 350, ui_area->y + 24 + i * line_height + 2, ui_list_font_color);
 
-        xlib_text_draw(UI_LIST_STATUS[spoor_objects_new[i].status], ui_area->x + 500, ui_area->y + 24 + i * line_height + 2, UI_LIST_STATUS_COLOR[spoor_objects_new[i].status]);
+        xlib_text_draw(UI_LIST_STATUS[spoor_object->status], ui_area->x + 500, ui_area->y + 24 + i * line_height + 2, UI_LIST_STATUS_COLOR[spoor_object->status]);
 
         char str[50];
-        sprintf(str, "%d", spoor_objects_new[i].type);
+        sprintf(str, "%d", spoor_object->type);
         /*
         xlib_text_draw(str, ui_area->x + 590, ui_area->y + 24 + i * line_height + 2, ui_list_font_color);
         */
-        xlib_text_draw(UI_LIST_TYPES[spoor_objects_new[i].type], ui_area->x + 590, ui_area->y + 24 + i * line_height + 2, ui_list_font_color);
+        xlib_text_draw(UI_LIST_TYPES[spoor_object->type], ui_area->x + 590, ui_area->y + 24 + i * line_height + 2, ui_list_font_color);
 
-        xlib_text_draw(spoor_objects_new[i].parent_title, ui_area->x + 680, ui_area->y + 24 + i * line_height + 2, ui_list_font_color);
+        xlib_text_draw(spoor_object->parent_title, ui_area->x + 680, ui_area->y + 24 + i * line_height + 2, ui_list_font_color);
     }
     ui_font_size_set(14);
 }
@@ -1507,7 +1510,7 @@ void ui_list_key_input_func(void)
         else if (strncmp(XlibHandleGlobal.key_sym_str, "Return", 6) == 0)
         {
             XlibHandleGlobal.buffer_command[XlibHandleGlobal.buffer_command_size - 1] = 0;
-            mode_command_process(UIListGlobal.index_current);
+            mode_command_process(UIListGlobal.spoor_objects_indexes_orginal[UIListGlobal.index_current]);
             XlibHandleGlobal.mode_command = false;
             XlibHandleGlobal.buffer_command[0] = 0;
             XlibHandleGlobal.buffer_command_size = 0;
@@ -1520,8 +1523,8 @@ void ui_list_key_input_func(void)
 
     if (strncmp(XlibHandleGlobal.buffer_command + XlibHandleGlobal.buffer_command_size - 2, "dd", 2) == 0)
     {
-        spoor_storage_delete(&spoor_objects[UIListGlobal.index_current]);
-        spoor_sort_objects_remove(UIListGlobal.index_current);
+        spoor_storage_delete(&spoor_objects[UIListGlobal.spoor_objects_indexes_orginal[UIListGlobal.index_current]]);
+        spoor_sort_objects_remove(UIListGlobal.spoor_objects_indexes_orginal[UIListGlobal.index_current]);
         XlibHandleGlobal.buffer_command[0] = 0;
         XlibHandleGlobal.buffer_command_size = 0;
         xlib_render();

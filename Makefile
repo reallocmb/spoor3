@@ -71,3 +71,6 @@ release:
 
 remove:
 	sudo rm $(install_dir)/$(program)
+
+bear: clean
+	bear -- make

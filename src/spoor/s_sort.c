@@ -13,13 +13,34 @@ int64_t spoor_time_compare(SpoorTime *time1, SpoorTime *time2)
     return result;
 }
 
+i32 spoor_title_alphabet_compare(char *buffer0, char *buffer1)
+{
+    i32 diff = 0;
+    u32 i;
+    for (i = 0; !(buffer0[i] == 0 || buffer1[i] == 0); i++)
+    {
+        diff = buffer0[i] - buffer1[i];
+        if (diff < 0)
+            return -1;
+        if (diff > 0)
+            return 1;
+    }
+
+    if (strlen(buffer0) > strlen(buffer1))
+        return 1;
+    else
+        return -1;
+    return 0;
+}
+
 int sort_func(const void *data0, const void *data1)
 {
     int32_t result = spoor_time_compare(&((SpoorObject *)data0)->schedule.start, &((SpoorObject *)data1)->schedule.start);
     if (result == 0)
         result = spoor_time_compare(&((SpoorObject *)data0)->deadline.end, &((SpoorObject *)data1)->deadline.end);
     if (result == 0)
-        result = ((SpoorObject *)data0)->status - ((SpoorObject *)data1)->status;
+        result = spoor_title_alphabet_compare(((SpoorObject *)data0)->title, ((SpoorObject *)data1)->title);
+
 
     return result;
 }
@@ -94,13 +115,15 @@ uint32_t spoor_sort_objects_reposition_down(uint32_t index)
 
 void spoor_sort_objects_append(SpoorObject *spoor_object)
 {
-    uint32_t i;
+    uint32_t i = 0;
+#if 0
     for (i = 0; i < spoor_objects_count; i++)
     {
         if (spoor_objects[i].schedule.start.hour != -1 &&
             spoor_objects[i].schedule.end.hour != -1)
             break;
     }
+#endif
 
     for (; i < spoor_objects_count; i++)
     {
