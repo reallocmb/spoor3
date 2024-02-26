@@ -27,13 +27,27 @@ void spoor_filter_change(SpoorFilter *spoor_filter, char *arguments)
     {
         if (arguments[0] == 't')
         {
-            spoor_filter->types = 0;
-            if (argument_length == 4 && strncmp(arguments + 1, "all", 3) == 0)
-                spoor_filter->types = FILTER_TYPE_ALL;
-            else
+            bool minus = false;
+
+            u32 i;
+            for (i = 1; i < argument_length; i++)
             {
-                u32 i;
-                for (i = 1; i < argument_length; i++)
+                if (minus)
+                {
+                    switch (arguments[i])
+                    {
+                        case 't': spoor_filter->types &= ~FILTER_TYPE_TASK; break;
+                        case 'p': spoor_filter->types &= ~FILTER_TYPE_PROJECT; break;
+                        case 'e': spoor_filter->types &= ~FILTER_TYPE_EVENT; break;
+                        case 'a': spoor_filter->types &= ~FILTER_TYPE_APPOINTMENT; break;
+                        case 'g': spoor_filter->types &= ~FILTER_TYPE_GOAL; break;
+                        case 'h': spoor_filter->types &= ~FILTER_TYPE_HABIT; break;
+                        case '+': minus = false; break;
+                        case '.': spoor_filter->types = FILTER_TYPE_ALL; break;
+                        case '0': spoor_filter->types = 0; break;
+                    }
+                }
+                else
                 {
                     switch (arguments[i])
                     {
@@ -43,6 +57,9 @@ void spoor_filter_change(SpoorFilter *spoor_filter, char *arguments)
                         case 'a': spoor_filter->types |= FILTER_TYPE_APPOINTMENT; break;
                         case 'g': spoor_filter->types |= FILTER_TYPE_GOAL; break;
                         case 'h': spoor_filter->types |= FILTER_TYPE_HABIT; break;
+                        case '-': minus = true; break;
+                        case '.': spoor_filter->types = FILTER_TYPE_ALL; break;
+                        case '0': spoor_filter->types = 0; break;
                     }
                 }
             }
@@ -67,4 +84,15 @@ void spoor_filter_change(SpoorFilter *spoor_filter, char *arguments)
             }
         }
     }
+}
+
+void spoor_filter_buffer_create(SpoorFilter *spoor_filter, char *buffer26)
+{
+    sprintf(buffer26, "FILTER TYPE FLAGS: %s%s%s%s%s%s",
+            (spoor_filter->types & FILTER_TYPE_TASK) ?"T" :"0",
+            (spoor_filter->types & FILTER_TYPE_PROJECT) ?"P" :"0",
+            (spoor_filter->types & FILTER_TYPE_EVENT) ?"E" :"0",
+            (spoor_filter->types & FILTER_TYPE_APPOINTMENT) ?"A" :"0",
+            (spoor_filter->types & FILTER_TYPE_GOAL) ?"G" :"0",
+            (spoor_filter->types & FILTER_TYPE_HABIT) ?"H" :"0");
 }
