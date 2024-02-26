@@ -66,8 +66,15 @@ tests: all
 	gcc -Isrc tests/test.c -o bin/tests tests/eenheid/*.c $(extern_lib)
 	bin/tests
 
+test:
+	gcc -Isrc tests/test.c -o bin/test tests/eenheid/*.c $(extern_lib)
+	./bin/test
+
 release: 
 	compiler = gcc $(release_flags)
 
 remove:
 	sudo rm $(install_dir)/$(program)
+
+bear: clean
+	bear -- make

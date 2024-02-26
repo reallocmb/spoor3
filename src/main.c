@@ -8,11 +8,7 @@
 
 int main(int argc, char **argv)
 {
-#if 0
-    spoor_ui_font_init("font.otf", 14);
-#else
     spoor_ui_font_init("/usr/share/fonts/adobe-source-code-pro/SourceCodePro-Medium.otf", 14);
-#endif
     /* change current directory to database directory */
 #ifdef _WIN32
     char *home_directory = getenv("USERPROFILE");

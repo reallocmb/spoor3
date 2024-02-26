@@ -965,16 +965,10 @@ void ui_area_close(void)
             ptr->y = 0;
             ptr->next = NULL;
             ptr->prev = NULL;
+            ptr->childs = NULL;
             ptr->parent = NULL;
-            if (ptr->childs)
-            {
-                UIArea *childs = ptr->childs;
-                while (childs)
-                {
-                    childs->parent = XlibHandleGlobal.ui_area_head;
-                    childs = childs->next;
-                }
-            }
+            ptr->childs_count = 0;
+            ptr->flags = 0;
             *XlibHandleGlobal.ui_area_head = *ptr;
             XlibHandleGlobal.ui_area_feet = XlibHandleGlobal.ui_area_head;
             free(ptr);
@@ -984,7 +978,6 @@ void ui_area_close(void)
         {
             ptr->parent = ptr->parent->parent;
             ptr->next = current->parent->parent->childs->next;
-            ptr->prev = NULL;
             current->parent->parent->childs = ptr;
             ptr->next->prev = ptr;
             XlibHandleGlobal.ui_area_feet = ptr;
@@ -1005,13 +998,15 @@ void ui_area_close(void)
         {
             ptr->parent = ptr->parent->parent;
             ptr->next = current->parent->next;
-            current->parent->next->prev = ptr;
+            current->parent->prev = ptr;
             current->parent->prev->next = ptr;
             ptr->prev = current->parent->prev;
             XlibHandleGlobal.ui_area_feet = ptr;
             free(current->parent);
             free(current);
         }
+        while (XlibHandleGlobal.ui_area_feet->childs != NULL)
+            XlibHandleGlobal.ui_area_feet = XlibHandleGlobal.ui_area_feet->childs;
     }
     else
     {
@@ -1048,11 +1043,8 @@ void ui_area_close(void)
             free(current);
         }
 
+
     }
-
-    while (XlibHandleGlobal.ui_area_feet->childs != NULL)
-        XlibHandleGlobal.ui_area_feet = XlibHandleGlobal.ui_area_feet->childs;
-
     xlib_render();
 }
 
@@ -1163,21 +1155,16 @@ void ui_area_blanc_draw_func(UIArea *ui_area)
                               ui_area->width - 4, ui_area->height - 4,
                               0x000000);
 
-    char id_parent_str[20] = { 0 };
-    char id_str[20] = { 0 };
-    char id_next_str[20] = { 0 };
-    char id_prev_str[20] = { 0 };
+    char id_str[20];
+    char id_next_str[20];
+    char parent_str[20];
     sprintf(id_str, "id: %d", ui_area->id);
-    if (ui_area->parent)
-        sprintf(id_parent_str, "id parent: %d", ui_area->parent->id);
     if (ui_area->next)
         sprintf(id_next_str, "id next: %d", ui_area->next->id);
-    if (ui_area->prev)
-        sprintf(id_prev_str, "id prev: %d", ui_area->prev->id);
-    xlib_text_draw(id_parent_str, ui_area->x + 10, ui_area->y + 10, 0xffffff);
-    xlib_text_draw(id_str, ui_area->x + 10, ui_area->y + 10 + 16, 0xffffff);
-    xlib_text_draw(id_prev_str, ui_area->x + 10, ui_area->y + 10 + 2 * 16, 0xffffff);
-    xlib_text_draw(id_next_str, ui_area->x + 10, ui_area->y + 10 + 3 * 16, 0xffffff);
+    else
+        id_next_str[0] = 0;
+    xlib_text_draw(id_str, ui_area->x + 10, ui_area->y + 10, 0xffffff);
+    xlib_text_draw(id_next_str, ui_area->x + 10, ui_area->y + 10 + 16, 0xffffff);
 }
 
 void ui_area_key_input_default_func(void)
@@ -1502,9 +1489,6 @@ void ui_list_draw_func(UIArea *ui_area)
 
         xlib_text_draw(spoor_object->parent_title, ui_area->x + 680, ui_area->y + 24 + i * line_height + 2, ui_list_font_color);
     }
-    char filter_flags_buffer[26];
-    spoor_filter_buffer_create(&UIListGlobal.spoor_filter, filter_flags_buffer);
-    xlib_text_draw(filter_flags_buffer, ui_area->x + 10, ui_area->height - 20, ui_list_font_color);
     ui_font_size_set(14);
 }
 
