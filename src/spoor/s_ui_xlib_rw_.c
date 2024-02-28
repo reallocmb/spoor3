@@ -27,18 +27,18 @@ typedef struct UIArea {
     struct UIArea *prev;
     struct UIArea *next;
     void (*drawing_func)(struct UIArea *ui_area);
-    void (*key_input_func)(void);
+    void (*key_input_func)(struct UIArea *ui_area);
+    void *data;
 } UIArea;
 
 void ui_area_blanc_draw_func(UIArea *ui_area);
-
-void ui_area_key_input_default_func(void);
-void xlib_ui_calendar_draw(UIArea *ui_area);
-void ui_calendar_input(void);
+void ui_area_key_input_default_func(UIArea *ui_area);
+void ui_calendar_draw_func(UIArea *ui_area);
+void ui_calendar_key_input_func(UIArea *ui_area);
 void ui_list_draw_func(UIArea *ui_area);
-void ui_list_key_input_func(void);
+void ui_list_key_input_func(UIArea *ui_area);
 void ui_help_draw_func(UIArea *ui_area);
-void ui_help_key_input_func(void);
+void ui_help_key_input_func(UIArea *ui_area);
 
 enum {
     MODE_DEFAULT,
@@ -104,32 +104,44 @@ struct XlibHandle {
     .mode_command = false,
 };
 
-struct UIList {
+typedef struct UIList {
     SpoorFilter spoor_filter;
     u32 index_current;
     u32 spoor_objects_indexes_orginal[500];
     u32 spoor_objects_indexes_orginal_count;
-} UIListGlobal = {
-    .index_current = 0,
-    .spoor_filter = {
+} UIList;
+
+UIList *ui_list_create(void)
+{
+    UIList *ui_list = malloc(sizeof(*ui_list));
+    ui_list->index_current = 0;
+    ui_list->spoor_filter = (SpoorFilter){
         .types = FILTER_TYPE_ALL,
         .status = FILTER_STATUS_ALL,
-    },
-    .spoor_objects_indexes_orginal_count = 0,
-};
+    };
+    ui_list->spoor_objects_indexes_orginal_count = 0;
 
-struct UICalendar {
+    return ui_list;
+}
+
+typedef struct UICalendar {
     uint8_t days_count;
     i32 today_offset;
     u32 hour_offset;
     u32 spoor_objects_index;
     bool spoor_objects_grab;
-} UICalendarGlobal = {
-    .days_count = 5,
-    .today_offset = 0,
-    .hour_offset = 7,
-    .spoor_objects_grab = false,
-};
+} UICalendar;
+
+UICalendar *ui_calendar_create(void)
+{
+    UICalendar *ui_calendar = malloc(sizeof(*ui_calendar));
+    ui_calendar->days_count = 5;
+    ui_calendar->today_offset = 0;
+    ui_calendar->hour_offset = 7;
+    ui_calendar->spoor_objects_grab = false;
+
+    return ui_calendar;
+}
 
 const char ui_calendar_week_day_names[7][10] = {
     "SUNDAY",
@@ -144,7 +156,6 @@ const char ui_calendar_week_day_names[7][10] = {
 #define UI_CALENDAR_DAYS_COUNT_LIMIT 255
 #define UI_CALENDAR_FONT_COLOR 0x050510
 #define DAY_SEC 86400
-
 
 i32 alphaBlend(i32 colorA, i32 colorB, uint8_t alpha);
 
@@ -187,7 +198,6 @@ void xlib_window_create(void)
     XlibHandleGlobal.image->height = XlibHandleGlobal.window_height;
     XlibHandleGlobal.image->bytes_per_line = XlibHandleGlobal.window_width * 4;
     XlibHandleGlobal.image->data = (char *)XlibHandleGlobal.bits;
-
 }
 
 void input_special_keys(void)
@@ -207,10 +217,10 @@ void input_special_keys(void)
     }
 }
 
-bool spoor_object_index_inside_week(SpoorObject *spoor_object)
+bool ui_calendar_spoor_object_index_inside_week(UICalendar *ui_calendar, SpoorObject *spoor_object)
 {
-    time_t time_today_sec_start = time(NULL) + UICalendarGlobal.today_offset * DAY_SEC;
-    time_t time_today_sec_end = time_today_sec_start + UICalendarGlobal.days_count * DAY_SEC;
+    time_t time_today_sec_start = time(NULL) + ui_calendar->today_offset * DAY_SEC;
+    time_t time_today_sec_end = time_today_sec_start + ui_calendar->days_count * DAY_SEC;
     SpoorTime spoor_time_start = *(SpoorTime *)localtime(&time_today_sec_start);
     SpoorTime spoor_time_end = *(SpoorTime *)localtime(&time_today_sec_end);
 
@@ -245,46 +255,46 @@ u32 buffer_command_counter_detect_rw(u32 counter_default)
     return counter;
 }
 
-void ui_calendar_spoor_object_index_next(void)
+void ui_calendar_spoor_object_index_next(UICalendar *ui_calendar)
 {
-    if (spoor_object_index_inside_week(&spoor_objects[UICalendarGlobal.spoor_objects_index + 1]))
-        UICalendarGlobal.spoor_objects_index++;
+    if (ui_calendar_spoor_object_index_inside_week(ui_calendar, &spoor_objects[ui_calendar->spoor_objects_index + 1]))
+        ui_calendar->spoor_objects_index++;
 }
 
-void ui_calendar_spoor_object_index_prev(void)
+void ui_calendar_spoor_object_index_prev(UICalendar *ui_calendar)
 {
-    if (UICalendarGlobal.spoor_objects_index == 0)
+    if (ui_calendar->spoor_objects_index == 0)
         return;
-    if (spoor_object_index_inside_week(&spoor_objects[UICalendarGlobal.spoor_objects_index - 1]))
-        UICalendarGlobal.spoor_objects_index--;
+    if (ui_calendar_spoor_object_index_inside_week(ui_calendar, &spoor_objects[ui_calendar->spoor_objects_index - 1]))
+        ui_calendar->spoor_objects_index--;
 }
 
-void ui_calendar_spoor_object_index_left(void)
+void ui_calendar_spoor_object_index_left(UICalendar *ui_calendar)
 {
     u32 i;
-    for (i = UICalendarGlobal.spoor_objects_index - 1; i < spoor_objects_count; i--)
+    for (i = ui_calendar->spoor_objects_index - 1; i < spoor_objects_count; i--)
     {
         if (spoor_time_compare_day(&spoor_objects[i].schedule.start,
-                                   &spoor_objects[UICalendarGlobal.spoor_objects_index].schedule.start) != 0)
+                                   &spoor_objects[ui_calendar->spoor_objects_index].schedule.start) != 0)
         {
-            if (spoor_object_index_inside_week(&spoor_objects[i]))
+            if (ui_calendar_spoor_object_index_inside_week(ui_calendar, &spoor_objects[i]))
             {
                 for (--i; i < spoor_objects_count; i--)
                 {
-                    int diff0 = spoor_objects[UICalendarGlobal.spoor_objects_index].schedule.start.hour * 60 + spoor_objects[UICalendarGlobal.spoor_objects_index].schedule.start.min -
+                    int diff0 = spoor_objects[ui_calendar->spoor_objects_index].schedule.start.hour * 60 + spoor_objects[ui_calendar->spoor_objects_index].schedule.start.min -
                         spoor_objects[i + 1].schedule.start.hour * 60 + spoor_objects[i + 1].schedule.start.min;
-                    int diff1 = spoor_objects[UICalendarGlobal.spoor_objects_index].schedule.start.hour * 60 + spoor_objects[UICalendarGlobal.spoor_objects_index].schedule.start.min -
+                    int diff1 = spoor_objects[ui_calendar->spoor_objects_index].schedule.start.hour * 60 + spoor_objects[ui_calendar->spoor_objects_index].schedule.start.min -
                         spoor_objects[i].schedule.start.hour * 60 + spoor_objects[i].schedule.start.min;
 
                     if (diff0 + diff1 > 0 ||
                         spoor_time_compare_day(&spoor_objects[i + 1].schedule.start, &spoor_objects[i].schedule.start) != 0)
                     {
-                        if (spoor_object_index_inside_week(&spoor_objects[i + 1]))
-                            UICalendarGlobal.spoor_objects_index = i + 1;
+                        if (ui_calendar_spoor_object_index_inside_week(ui_calendar, &spoor_objects[i + 1]))
+                            ui_calendar->spoor_objects_index = i + 1;
                         return;
                     }
                 }
-                UICalendarGlobal.spoor_objects_index = i + 1;
+                ui_calendar->spoor_objects_index = i + 1;
             }
             else
                 return;
@@ -292,33 +302,33 @@ void ui_calendar_spoor_object_index_left(void)
     }
 }
 
-void ui_calendar_spoor_object_index_right(void)
+void ui_calendar_spoor_object_index_right(UICalendar *ui_calendar)
 {
     u32 i;
-    for (i = UICalendarGlobal.spoor_objects_index + 1; i < spoor_objects_count; i++)
+    for (i = ui_calendar->spoor_objects_index + 1; i < spoor_objects_count; i++)
     {
         if (spoor_time_compare_day(&spoor_objects[i].schedule.start,
-                                   &spoor_objects[UICalendarGlobal.spoor_objects_index].schedule.start) != 0)
+                                   &spoor_objects[ui_calendar->spoor_objects_index].schedule.start) != 0)
         {
-            if (spoor_object_index_inside_week(&spoor_objects[i]))
+            if (ui_calendar_spoor_object_index_inside_week(ui_calendar, &spoor_objects[i]))
             {
                 for (++i; i < spoor_objects_count; i++)
                 {
 
                     int diff0 = spoor_objects[i - 1].schedule.start.hour * 60 + spoor_objects[i - 1].schedule.start.min -
-                        spoor_objects[UICalendarGlobal.spoor_objects_index].schedule.start.hour * 60 + spoor_objects[UICalendarGlobal.spoor_objects_index].schedule.start.min;
+                        spoor_objects[ui_calendar->spoor_objects_index].schedule.start.hour * 60 + spoor_objects[ui_calendar->spoor_objects_index].schedule.start.min;
                     int diff1 = spoor_objects[i].schedule.start.hour * 60 + spoor_objects[i].schedule.start.min -
-                        spoor_objects[UICalendarGlobal.spoor_objects_index].schedule.start.hour * 60 + spoor_objects[UICalendarGlobal.spoor_objects_index].schedule.start.min;
+                        spoor_objects[ui_calendar->spoor_objects_index].schedule.start.hour * 60 + spoor_objects[ui_calendar->spoor_objects_index].schedule.start.min;
 
                     if (diff0 + diff1 >= 0 ||
                         spoor_time_compare_day(&spoor_objects[i - 1].schedule.start, &spoor_objects[i].schedule.start) != 0)
                     {
-                        if (spoor_object_index_inside_week(&spoor_objects[i - 1]))
-                            UICalendarGlobal.spoor_objects_index = i - 1;
+                        if (ui_calendar_spoor_object_index_inside_week(ui_calendar, &spoor_objects[i - 1]))
+                            ui_calendar->spoor_objects_index = i - 1;
                         return;
                     }
                 }
-                UICalendarGlobal.spoor_objects_index = i - 1;
+                ui_calendar->spoor_objects_index = i - 1;
             }
             else
                 return;
@@ -326,73 +336,73 @@ void ui_calendar_spoor_object_index_right(void)
     }
 }
 
-void ui_calendar_spoor_object_move_left(void)
+void ui_calendar_spoor_object_move_left(UICalendar *ui_calendar)
 {
     u32 counter = buffer_command_counter_detect_rw(1);
 
-    SpoorObject *spoor_object = &spoor_objects[UICalendarGlobal.spoor_objects_index];
+    SpoorObject *spoor_object = &spoor_objects[ui_calendar->spoor_objects_index];
     spoor_time_days_add(&spoor_object->schedule.start, ~(i32)counter + 1);
     spoor_time_days_add(&spoor_object->schedule.end, ~(i32)counter + 1);
     spoor_storage_change(spoor_object, spoor_object);
 
-    UICalendarGlobal.spoor_objects_index = spoor_sort_objects_reposition_up(UICalendarGlobal.spoor_objects_index);
+    ui_calendar->spoor_objects_index = spoor_sort_objects_reposition_up(ui_calendar->spoor_objects_index);
 }
 
-void ui_calendar_spoor_object_move_right(void)
+void ui_calendar_spoor_object_move_right(UICalendar *ui_calendar)
 {
     u32 counter = buffer_command_counter_detect_rw(1);
 
-    SpoorObject *spoor_object = &spoor_objects[UICalendarGlobal.spoor_objects_index];
+    SpoorObject *spoor_object = &spoor_objects[ui_calendar->spoor_objects_index];
     spoor_time_days_add(&spoor_object->schedule.start, counter);
     spoor_time_days_add(&spoor_object->schedule.end, counter);
     spoor_storage_change(spoor_object, spoor_object);
 
-    UICalendarGlobal.spoor_objects_index = spoor_sort_objects_reposition_down(UICalendarGlobal.spoor_objects_index);
+    ui_calendar->spoor_objects_index = spoor_sort_objects_reposition_down(ui_calendar->spoor_objects_index);
 }
 
-void ui_calendar_spoor_object_move_down(void)
+void ui_calendar_spoor_object_move_down(UICalendar *ui_calendar)
 {
     u32 counter = buffer_command_counter_detect_rw(10);
 
-    SpoorObject *spoor_object = &spoor_objects[UICalendarGlobal.spoor_objects_index];
+    SpoorObject *spoor_object = &spoor_objects[ui_calendar->spoor_objects_index];
     spoor_time_minutes_add(&spoor_object->schedule.start, counter);
     spoor_time_minutes_add(&spoor_object->schedule.end, counter);
     spoor_storage_change(spoor_object, spoor_object);
 
-    UICalendarGlobal.spoor_objects_index = spoor_sort_objects_reposition_down(UICalendarGlobal.spoor_objects_index);
+    ui_calendar->spoor_objects_index = spoor_sort_objects_reposition_down(ui_calendar->spoor_objects_index);
 }
 
-void ui_calendar_spoor_object_move_up(void)
+void ui_calendar_spoor_object_move_up(UICalendar *ui_calendar)
 {
     u32 counter = buffer_command_counter_detect_rw(10);
 
-    SpoorObject *spoor_object = &spoor_objects[UICalendarGlobal.spoor_objects_index];
+    SpoorObject *spoor_object = &spoor_objects[ui_calendar->spoor_objects_index];
     spoor_time_minutes_add(&spoor_object->schedule.start, ~(i32)counter + 1);
     spoor_time_minutes_add(&spoor_object->schedule.end, ~(i32)counter + 1);
     spoor_storage_change(spoor_object, spoor_object);
 
-    UICalendarGlobal.spoor_objects_index = spoor_sort_objects_reposition_up(UICalendarGlobal.spoor_objects_index);
+    ui_calendar->spoor_objects_index = spoor_sort_objects_reposition_up(ui_calendar->spoor_objects_index);
 }
 
-void ui_calendar_spoor_object_move_grow(void)
+void ui_calendar_spoor_object_move_grow(UICalendar *ui_calendar)
 {
     u32 counter = buffer_command_counter_detect_rw(10);
 
-    SpoorObject *spoor_object = &spoor_objects[UICalendarGlobal.spoor_objects_index];
+    SpoorObject *spoor_object = &spoor_objects[ui_calendar->spoor_objects_index];
     spoor_time_minutes_add(&spoor_object->schedule.end, counter);
     spoor_storage_change(spoor_object, spoor_object);
 }
 
-void ui_calendar_spoor_object_move_shrink(void)
+void ui_calendar_spoor_object_move_shrink(UICalendar *ui_calendar)
 {
     u32 counter = buffer_command_counter_detect_rw(10);
 
-    SpoorObject *spoor_object = &spoor_objects[UICalendarGlobal.spoor_objects_index];
+    SpoorObject *spoor_object = &spoor_objects[ui_calendar->spoor_objects_index];
     spoor_time_minutes_add(&spoor_object->schedule.end, ~(i32)counter + 1);
     spoor_storage_change(spoor_object, spoor_object);
 }
 
-void mode_command_process(u32 spoor_object_index)
+void mode_command_process(UIList *ui_list, u32 spoor_object_index)
 {
     if (XlibHandleGlobal.buffer_command[1] == 'c')
     {
@@ -415,7 +425,8 @@ void mode_command_process(u32 spoor_object_index)
     }
     else if (XlibHandleGlobal.buffer_command[1] == 'f')
     {
-        spoor_filter_change(&UIListGlobal.spoor_filter, XlibHandleGlobal.buffer_command + 2);
+        if (ui_list)
+            spoor_filter_change(&ui_list->spoor_filter, XlibHandleGlobal.buffer_command + 2);
     }
     else if (XlibHandleGlobal.buffer_command[1] == 'q')
     {
@@ -424,8 +435,9 @@ void mode_command_process(u32 spoor_object_index)
 }
 
 void xlib_render(void);
-void ui_calendar_input(void)
+void ui_calendar_key_input_func(UIArea *ui_area)
 {
+    UICalendar *ui_calendar = (UICalendar *)ui_area->data;
     if (XlibHandleGlobal.key_input_buffer[0] == 0x1b)
     {
         XlibHandleGlobal.mode = MODE_DEFAULT;
@@ -436,10 +448,10 @@ void ui_calendar_input(void)
     {
         switch (XlibHandleGlobal.key_sym_str[0])
         {
-            case 's': UICalendarGlobal.today_offset--; break;
-            case 'n': UICalendarGlobal.hour_offset++; break;
-            case 'r': if (UICalendarGlobal.hour_offset != 0) UICalendarGlobal.hour_offset--; break;
-            case 't': UICalendarGlobal.today_offset++; break;
+            case 's': ui_calendar->today_offset--; break;
+            case 'n': ui_calendar->hour_offset++; break;
+            case 'r': if (ui_calendar->hour_offset != 0) ui_calendar->hour_offset--; break;
+            case 't': ui_calendar->today_offset++; break;
         }
         xlib_render();
     }
@@ -461,7 +473,7 @@ void ui_calendar_input(void)
             }
             else if (strncmp(XlibHandleGlobal.key_sym_str, "Return", 6) == 0)
             {
-                mode_command_process(UICalendarGlobal.spoor_objects_index);
+                mode_command_process(NULL, ui_calendar->spoor_objects_index);
                 XlibHandleGlobal.mode_command = false;
                 XlibHandleGlobal.buffer_command[0] = 0;
                 XlibHandleGlobal.buffer_command_size = 0;
@@ -475,8 +487,8 @@ void ui_calendar_input(void)
 
         if (strncmp(XlibHandleGlobal.buffer_command + XlibHandleGlobal.buffer_command_size - 2, "dd", 2) == 0)
         {
-            spoor_storage_delete(&spoor_objects[UICalendarGlobal.spoor_objects_index]);
-            spoor_sort_objects_remove(UICalendarGlobal.spoor_objects_index);
+            spoor_storage_delete(&spoor_objects[ui_calendar->spoor_objects_index]);
+            spoor_sort_objects_remove(ui_calendar->spoor_objects_index);
         }
         if (strncmp(XlibHandleGlobal.buffer_command + XlibHandleGlobal.buffer_command_size - 1, ":", 1) == 0)
         {
@@ -508,32 +520,34 @@ void ui_calendar_input(void)
 
             buffer_command_clear = false;
         }
-        else if (UICalendarGlobal.spoor_objects_grab)
+        else if (ui_calendar->spoor_objects_grab)
         {
+            UICalendar *ui_calendar = (UICalendar *)ui_area->data;
             switch (XlibHandleGlobal.key_sym_str[0])
             {
-                case 'v': UICalendarGlobal.spoor_objects_grab = false; break;
-                case 's': ui_calendar_spoor_object_move_left(); break;
-                case 'n': ui_calendar_spoor_object_move_down(); break;
-                case 'r': ui_calendar_spoor_object_move_up(); break;
-                case 't': ui_calendar_spoor_object_move_right(); break;
-                case 'N': ui_calendar_spoor_object_move_grow(); break;
-                case 'R': ui_calendar_spoor_object_move_shrink(); break;
+                case 'v': ui_calendar->spoor_objects_grab = false; break;
+                case 's': ui_calendar_spoor_object_move_left(ui_calendar); break;
+                case 'n': ui_calendar_spoor_object_move_down(ui_calendar); break;
+                case 'r': ui_calendar_spoor_object_move_up(ui_calendar); break;
+                case 't': ui_calendar_spoor_object_move_right(ui_calendar); break;
+                case 'N': ui_calendar_spoor_object_move_grow(ui_calendar); break;
+                case 'R': ui_calendar_spoor_object_move_shrink(ui_calendar); break;
                 default: buffer_command_clear = false; break;
 
             }
         }
         else
         {
+            UICalendar *ui_calendar = (UICalendar *)ui_area->data;
             switch (XlibHandleGlobal.key_sym_str[0])
             {
-                case 's': ui_calendar_spoor_object_index_left(); break;
-                case 'n': ui_calendar_spoor_object_index_next(); break;
-                case 'r': ui_calendar_spoor_object_index_prev(); break;
-                case 't': ui_calendar_spoor_object_index_right(); break;
-                case 'v': UICalendarGlobal.spoor_objects_grab = true; break;
-                case 'N': UICalendarGlobal.days_count--; break;
-                case 'R': UICalendarGlobal.days_count++; break;
+                case 's': ui_calendar_spoor_object_index_left(ui_calendar); break;
+                case 'n': ui_calendar_spoor_object_index_next(ui_calendar); break;
+                case 'r': ui_calendar_spoor_object_index_prev(ui_calendar); break;
+                case 't': ui_calendar_spoor_object_index_right(ui_calendar); break;
+                case 'v': ui_calendar->spoor_objects_grab = true; break;
+                case 'N': ui_calendar->days_count--; break;
+                case 'R': ui_calendar->days_count++; break;
                 default: buffer_command_clear = false; break;
             }
         }
@@ -700,9 +714,9 @@ u32 ui_calendar_schedule_item_color(SpoorType type)
 /* !!! spoor_objects need to be sorted
  * Functions sets the current pointer index of UICalendarGlobal to
  * the first spoor_objects in the calendar */
-void ui_calendar_spoor_objects_pointer_init(void)
+void ui_calendar_spoor_objects_pointer_init(UICalendar *ui_calendar)
 {
-    time_t time_today_sec = time(NULL) + UICalendarGlobal.today_offset * DAY_SEC;
+    time_t time_today_sec = time(NULL) + ui_calendar->today_offset * DAY_SEC;
     struct tm *time_today_tm = localtime(&time_today_sec);
     SpoorTime spoor_time = *(SpoorTime *)time_today_tm;
 
@@ -711,23 +725,24 @@ void ui_calendar_spoor_objects_pointer_init(void)
     {
         if (spoor_time_compare_day(&spoor_objects[i].schedule.start, &spoor_time) >= 0)
         {
-            UICalendarGlobal.spoor_objects_index = i;
+            ui_calendar->spoor_objects_index = i;
             return;
         }
     }
 }
 
 #if 1
-void xlib_ui_calendar_draw(UIArea *ui_area)
+void ui_calendar_draw_func(UIArea *ui_area)
 {
-    time_t time_today_sec  = time(NULL) + UICalendarGlobal.today_offset * DAY_SEC; 
+    UICalendar *ui_calendar = (UICalendar *)ui_area->data;
+    time_t time_today_sec  = time(NULL) + ui_calendar->today_offset * DAY_SEC; 
     char today_date_format[36];
 
     uint8_t i;
     u32 k;
-    for (i = 0; i < UICalendarGlobal.days_count; i++, time_today_sec += DAY_SEC)
+    for (i = 0; i < ui_calendar->days_count; i++, time_today_sec += DAY_SEC)
     {
-        u32 width = ui_area->width / UICalendarGlobal.days_count + 1;
+        u32 width = ui_area->width / ui_calendar->days_count + 1;
         u32 height = ui_area->height;
         u32 x = i * width + ui_area->x;
         u32 y = 0 + ui_area->y;
@@ -735,10 +750,10 @@ void xlib_ui_calendar_draw(UIArea *ui_area)
         struct tm *time_today_tm = localtime(&time_today_sec);
 
         /*
-        if (i + UICalendarGlobal.today_offset == 0)
+        if (i + ui_calendar->today_offset == 0)
             xlib_rectangle_draw(x + 2, y + 2, width - 4, 56, 0x5454bb);
             */
-        if (i + UICalendarGlobal.today_offset == 0)
+        if (i + ui_calendar->today_offset == 0)
             xlib_rectangle_draw(x, y, width, height, 0x552588, 150);
 
         xlib_text_draw(ui_calendar_week_day_names[time_today_tm->tm_wday],
@@ -753,7 +768,7 @@ void xlib_ui_calendar_draw(UIArea *ui_area)
                     x + 6, y + 6 + 14 + 6, 0x000000);
 
         /* separation line between days */
-        if (UICalendarGlobal.days_count - i != 1)
+        if (ui_calendar->days_count - i != 1)
             xlib_line_vertical_draw(x + width, y, height - y, 0x000000);
 
         /* offset y axis */
@@ -767,7 +782,7 @@ void xlib_ui_calendar_draw(UIArea *ui_area)
         {
             if (k % 60 == 0)
             {
-                hours = k / 60 + UICalendarGlobal.hour_offset;
+                hours = k / 60 + ui_calendar->hour_offset;
                 if (hours > 23)
                     break;
                 sprintf(hour_format,
@@ -802,14 +817,14 @@ void xlib_ui_calendar_draw(UIArea *ui_area)
             {
                 if (spoor_time_compare_day(&spoor_objects[j].schedule.start, (SpoorTime *)time_today_tm) == 0)
                 {
-                    int minute_start = spoor_objects[j].schedule.start.hour * 60 + spoor_objects[j].schedule.start.min - UICalendarGlobal.hour_offset * 60;
-                    int minute_end = spoor_objects[j].schedule.end.hour * 60 + spoor_objects[j].schedule.end.min - UICalendarGlobal.hour_offset * 60 + 1;
+                    int minute_start = spoor_objects[j].schedule.start.hour * 60 + spoor_objects[j].schedule.start.min - ui_calendar->hour_offset * 60;
+                    int minute_end = spoor_objects[j].schedule.end.hour * 60 + spoor_objects[j].schedule.end.min - ui_calendar->hour_offset * 60 + 1;
                     printf("(%d, %d)\n", minute_start, minute_end);
                     u32 color_outline = 0x000000;
 
-                    if (j == UICalendarGlobal.spoor_objects_index)
+                    if (j == ui_calendar->spoor_objects_index)
                     {
-                        if (UICalendarGlobal.spoor_objects_grab)
+                        if (ui_calendar->spoor_objects_grab)
                             color_outline = 0x0000aa;
                         else
                             color_outline = 0xffffff;
@@ -847,9 +862,9 @@ void xlib_ui_calendar_draw(UIArea *ui_area)
 
                         u32 color_outline = 0x000000;
 
-                        if (j == UICalendarGlobal.spoor_objects_index)
+                        if (j == ui_calendar->spoor_objects_index)
                         {
-                            if (UICalendarGlobal.spoor_objects_grab)
+                            if (ui_calendar->spoor_objects_grab)
                                 color_outline = 0x0000aa;
                             else
                                 color_outline = 0xffffff;
@@ -891,6 +906,7 @@ void ui_area_append(void *drawing_func, i32 flags)
     if (XlibHandleGlobal.ui_area_feet->parent != NULL && flags == XlibHandleGlobal.ui_area_feet->parent->flags)
     {
         UIArea *ui_area0 = malloc(sizeof(*ui_area0));
+        ui_area0->data = NULL;
         UIArea *ptr = XlibHandleGlobal.ui_area_feet;
 
         /*
@@ -920,6 +936,7 @@ void ui_area_append(void *drawing_func, i32 flags)
 
     *ui_area0 = *parent;
     *ui_area1 = *ui_area0;
+    ui_area1->data = NULL;
 
     parent->id = XlibHandleGlobal.ui_area_counts++;
     ui_area1->id = XlibHandleGlobal.ui_area_counts++;
@@ -978,6 +995,8 @@ void ui_area_close(void)
             *XlibHandleGlobal.ui_area_head = *ptr;
             XlibHandleGlobal.ui_area_feet = XlibHandleGlobal.ui_area_head;
             free(ptr);
+            if (current->data)
+                free(current->data);
             free(current);
         }
         else if (current->parent->prev == NULL)
@@ -989,6 +1008,8 @@ void ui_area_close(void)
             ptr->next->prev = ptr;
             XlibHandleGlobal.ui_area_feet = ptr;
             free(current->parent);
+            if (current->data)
+                free(current->data);
             free(current);
         }
         else if (current->parent->next == NULL)
@@ -999,6 +1020,8 @@ void ui_area_close(void)
             ptr->next = NULL;
             XlibHandleGlobal.ui_area_feet = ptr;
             free(current->parent);
+            if (current->data)
+                free(current->data);
             free(current);
         }
         else
@@ -1010,6 +1033,8 @@ void ui_area_close(void)
             ptr->prev = current->parent->prev;
             XlibHandleGlobal.ui_area_feet = ptr;
             free(current->parent);
+            if (current->data)
+                free(current->data);
             free(current);
         }
     }
@@ -1024,6 +1049,8 @@ void ui_area_close(void)
 
             XlibHandleGlobal.ui_area_feet = current->parent->childs;
 
+            if (current->data)
+                free(current->data);
             free(current);
         }
         /* last child */
@@ -1034,6 +1061,8 @@ void ui_area_close(void)
 
             XlibHandleGlobal.ui_area_feet = current->prev;
 
+            if (current->data)
+                free(current->data);
             free(current);
         }
         /* middle child */
@@ -1045,6 +1074,8 @@ void ui_area_close(void)
 
             XlibHandleGlobal.ui_area_feet = current->prev;
 
+            if (current->data)
+                free(current->data);
             free(current);
         }
 
@@ -1180,8 +1211,9 @@ void ui_area_blanc_draw_func(UIArea *ui_area)
     xlib_text_draw(id_next_str, ui_area->x + 10, ui_area->y + 10 + 3 * 16, 0xffffff);
 }
 
-void ui_area_key_input_default_func(void)
+void ui_area_key_input_default_func(UIArea *ui_area)
 {
+    *ui_area = *ui_area; /* warning */
 }
 
 void _padding(u32 padding)
@@ -1247,6 +1279,21 @@ void ui_area_debug(UIArea *head)
     }
 }
 
+void ui_information_draw(void)
+{
+    xlib_rectangle_draw(100, 100, 200, 200, 0x161616, 0);
+
+    xlib_text_draw("Information Window", 100 + 10, 100 + 10, 0xaaaaaa);
+    xlib_line_horizontal_draw(100, 100 + 10 + 16, 200, 0xaaaaaa);
+    ui_font_size_set(12);
+    xlib_rectangle_lines_draw(100, 100, 200, 200, 0xaa00ff);
+    char title[7 + 250 + 1];
+    sprintf(title, "TITLE: %s", spoor_objects[0].title);
+    
+    xlib_text_draw(title, 100 + 10, 100 + 30, 0xaaaaaa);
+    ui_font_size_set(14);
+}
+
 void ui_area_draw(UIArea *head)
 {
     if (head->drawing_func != NULL)
@@ -1308,6 +1355,11 @@ void xlib_render(void)
     UIArea *current = XlibHandleGlobal.ui_area_feet;
     xlib_rectangle_lines_draw(current->x, current->y, current->width, current->height, 0xaa0000);
 
+    /* draw information window */
+#if 0
+    ui_information_draw();
+#endif
+
     XPutImage(XlibHandleGlobal.display,
               XlibHandleGlobal.window,
               XDefaultGC(XlibHandleGlobal.display, 0),
@@ -1326,6 +1378,9 @@ void default_input(void)
     if (strncmp(XlibHandleGlobal.buffer_command + XlibHandleGlobal.buffer_command_size - 2, "ll", 2) == 0)
     {
         printf("ll - command\n");
+        if (XlibHandleGlobal.ui_area_feet->data)
+            free(XlibHandleGlobal.ui_area_feet->data);
+        XlibHandleGlobal.ui_area_feet->data = ui_list_create();
         XlibHandleGlobal.ui_area_feet->drawing_func = ui_list_draw_func;
         XlibHandleGlobal.ui_area_feet->key_input_func = ui_list_key_input_func;
         XlibHandleGlobal.buffer_command[0] = 0;
@@ -1337,10 +1392,16 @@ void default_input(void)
     if (strncmp(XlibHandleGlobal.buffer_command + XlibHandleGlobal.buffer_command_size - 2, "lc", 2) == 0)
     {
         printf("lc - command\n");
-        XlibHandleGlobal.ui_area_feet->drawing_func = xlib_ui_calendar_draw;
-        XlibHandleGlobal.ui_area_feet->key_input_func = ui_calendar_input;
+        /*
+        if (XlibHandleGlobal.ui_area_feet->data)
+            free(XlibHandleGlobal.ui_area_feet->data);
+            */
+        XlibHandleGlobal.ui_area_feet->data = ui_calendar_create();
+        XlibHandleGlobal.ui_area_feet->drawing_func = ui_calendar_draw_func;
+        XlibHandleGlobal.ui_area_feet->key_input_func = ui_calendar_key_input_func;
         XlibHandleGlobal.buffer_command[0] = 0;
         XlibHandleGlobal.buffer_command_size = 0;
+        ui_calendar_spoor_objects_pointer_init(XlibHandleGlobal.ui_area_feet->data);
         xlib_render();
         return;
     }
@@ -1439,6 +1500,8 @@ const char UI_LIST_TYPES[][17] = {
 
 void ui_list_draw_func(UIArea *ui_area)
 {
+    UIList *ui_list = (UIList *)ui_area->data;
+
     const u32 ui_list_font_color = 0x000000;
     const u32 line_height = 14;
     ui_font_size_set(12);
@@ -1457,7 +1520,7 @@ void ui_list_draw_func(UIArea *ui_area)
     xlib_text_draw("PROJECT", ui_area->x + 680, ui_area->y + 10, ui_list_font_color);
 
     /* current spoor object selected */
-    xlib_rectangle_draw(ui_area->x, ui_area->y + 24 + UIListGlobal.index_current * line_height, ui_area->width, line_height, 0x110524, 190);
+    xlib_rectangle_draw(ui_area->x, ui_area->y + 24 + ui_list->index_current * line_height, ui_area->width, line_height, 0x110524, 190);
 
     xlib_line_horizontal_draw(ui_area->x, ui_area->y + 22, ui_area->width, 0x000000);
 
@@ -1467,18 +1530,18 @@ void ui_list_draw_func(UIArea *ui_area)
     char index_buf[50] = { 0 };
 
     /* filter */
-    UIListGlobal.spoor_objects_indexes_orginal_count = spoor_filter_use(UIListGlobal.spoor_objects_indexes_orginal,
-                                                                        &UIListGlobal.spoor_filter);
+    ui_list->spoor_objects_indexes_orginal_count = spoor_filter_use(ui_list->spoor_objects_indexes_orginal,
+                                                                        &ui_list->spoor_filter);
     u32 i;
-    for (i = 0; i < UIListGlobal.spoor_objects_indexes_orginal_count; i++)
+    for (i = 0; i < ui_list->spoor_objects_indexes_orginal_count; i++)
     {
-        index = UIListGlobal.index_current - i;
+        index = ui_list->index_current - i;
         if (index == 0)
             index = i;
         else if (index < 1)
             index = ~index + 1;
 
-        SpoorObject *spoor_object = &spoor_objects[UIListGlobal.spoor_objects_indexes_orginal[i]];
+        SpoorObject *spoor_object = &spoor_objects[ui_list->spoor_objects_indexes_orginal[i]];
 
         sprintf(index_buf, "%d", index);
         xlib_text_draw(index_buf, ui_area->x + 10, ui_area->y + 24 + i * line_height + 2, ui_list_font_color);
@@ -1503,13 +1566,15 @@ void ui_list_draw_func(UIArea *ui_area)
         xlib_text_draw(spoor_object->parent_title, ui_area->x + 680, ui_area->y + 24 + i * line_height + 2, ui_list_font_color);
     }
     char filter_flags_buffer[26];
-    spoor_filter_buffer_create(&UIListGlobal.spoor_filter, filter_flags_buffer);
-    xlib_text_draw(filter_flags_buffer, ui_area->x + 10, ui_area->height - 20, ui_list_font_color);
+    spoor_filter_buffer_create(&ui_list->spoor_filter, filter_flags_buffer);
+    xlib_text_draw(filter_flags_buffer, ui_area->x + 10, ui_area->y + ui_area->height - 20, ui_list_font_color);
     ui_font_size_set(14);
 }
 
-void ui_list_key_input_func(void)
+void ui_list_key_input_func(UIArea *ui_area)
 {
+    UIList *ui_list = (UIList *)ui_area->data;
+
     if (XlibHandleGlobal.key_input_buffer[0] == 0x1b)
     {
         XlibHandleGlobal.mode = MODE_DEFAULT;
@@ -1533,7 +1598,7 @@ void ui_list_key_input_func(void)
         else if (strncmp(XlibHandleGlobal.key_sym_str, "Return", 6) == 0)
         {
             XlibHandleGlobal.buffer_command[XlibHandleGlobal.buffer_command_size - 1] = 0;
-            mode_command_process(UIListGlobal.spoor_objects_indexes_orginal[UIListGlobal.index_current]);
+            mode_command_process(ui_list, ui_list->spoor_objects_indexes_orginal[ui_list->index_current]);
             XlibHandleGlobal.mode_command = false;
             XlibHandleGlobal.buffer_command[0] = 0;
             XlibHandleGlobal.buffer_command_size = 0;
@@ -1546,8 +1611,8 @@ void ui_list_key_input_func(void)
 
     if (strncmp(XlibHandleGlobal.buffer_command + XlibHandleGlobal.buffer_command_size - 2, "dd", 2) == 0)
     {
-        spoor_storage_delete(&spoor_objects[UIListGlobal.spoor_objects_indexes_orginal[UIListGlobal.index_current]]);
-        spoor_sort_objects_remove(UIListGlobal.spoor_objects_indexes_orginal[UIListGlobal.index_current]);
+        spoor_storage_delete(&spoor_objects[ui_list->spoor_objects_indexes_orginal[ui_list->index_current]]);
+        spoor_sort_objects_remove(ui_list->spoor_objects_indexes_orginal[ui_list->index_current]);
         XlibHandleGlobal.buffer_command[0] = 0;
         XlibHandleGlobal.buffer_command_size = 0;
         xlib_render();
@@ -1598,12 +1663,12 @@ void ui_list_key_input_func(void)
         case 'n':
         {
             u32 counter = buffer_command_counter_detect_rw(1);
-            UIListGlobal.index_current += counter;
+            ui_list->index_current += counter;
         } break;
         case 'r':
         {
             u32 counter = buffer_command_counter_detect_rw(1);
-            UIListGlobal.index_current -= counter;
+            ui_list->index_current -= counter;
         } break;
         default:
         {
@@ -1632,8 +1697,9 @@ void ui_help_draw_func(UIArea *ui_area)
     ui_font_size_set(14);
 }
 
-void ui_help_key_input_func(void)
+void ui_help_key_input_func(UIArea *ui_area)
 {
+    *ui_area = *ui_area; /* warning */
 }
 
 void xlib_events(void)
@@ -1675,16 +1741,10 @@ void xlib_events(void)
                     if (XlibHandleGlobal.key_input_buffer[0] == 0)
                         input_special_keys();
                     else
-                        XlibHandleGlobal.ui_area_feet->key_input_func();
+                        XlibHandleGlobal.ui_area_feet->key_input_func(XlibHandleGlobal.ui_area_feet);
                 }
                 else
                     default_input();
-#if 0
-                if (XlibHandleGlobal.key_input_buffer[0] == 0)
-                    input_special_keys();
-                else
-                    ui_calendar_input();
-#endif
             } break;
             case KeyRelease:
             {
@@ -1708,7 +1768,6 @@ void spoor_ui_xlib_show_rw_(void)
 {
     spoor_objects_count = spoor_object_storage_load(NULL);
     spoor_sort_objects_by_deadline();
-    ui_calendar_spoor_objects_pointer_init();
 
     XlibHandleGlobal.ui_area_feet = XlibHandleGlobal.ui_area_head;
 

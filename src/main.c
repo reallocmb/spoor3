@@ -8,7 +8,7 @@
 
 int main(int argc, char **argv)
 {
-    spoor_ui_font_init("/usr/share/fonts/adobe-source-code-pro/SourceCodePro-Medium.otf", 14);
+    spoor_ui_font_init("/usr/share/fonts/adobe-source-code-pro/SourceCodePro-Regular.otf", 14);
     /* change current directory to database directory */
 #ifdef _WIN32
     char *home_directory = getenv("USERPROFILE");
@@ -17,7 +17,6 @@ int main(int argc, char **argv)
 #endif
 
     char *database_path = malloc((strlen(home_directory) + 7 + 1) * sizeof(*database_path));
-    printf("%s\n", home_directory);
 #ifdef RELEASE
     strcpy(database_path, home_directory);
     strcpy(database_path + strlen(home_directory), "/.spoor");
