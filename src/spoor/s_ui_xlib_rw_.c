@@ -9,6 +9,8 @@
 #include<X11/Xutil.h>
 #include<unistd.h>
 
+const char *str = "string";
+
 #define XLIB_BACKGROUND_COLOR 0xd3b083
 #define XLIB_WINDOW_WIDTH 801
 #define XLIB_WINDOW_HEIGHT 600
@@ -259,6 +261,7 @@ void ui_calendar_spoor_object_index_next(UICalendar *ui_calendar)
 {
     if (ui_calendar_spoor_object_index_inside_week(ui_calendar, &spoor_objects[ui_calendar->spoor_objects_index + 1]))
         ui_calendar->spoor_objects_index++;
+    printf("index: %d\n", ui_calendar->spoor_objects_index);
 }
 
 void ui_calendar_spoor_object_index_prev(UICalendar *ui_calendar)
@@ -725,6 +728,7 @@ void ui_calendar_spoor_objects_pointer_init(UICalendar *ui_calendar)
     {
         if (spoor_time_compare_day(&spoor_objects[i].schedule.start, &spoor_time) >= 0)
         {
+            printf("UICalendar->spoor_objects_index: %d\n", ui_calendar->spoor_objects_index);
             ui_calendar->spoor_objects_index = i;
             return;
         }
@@ -906,15 +910,10 @@ void ui_area_append(void *drawing_func, i32 flags)
     if (XlibHandleGlobal.ui_area_feet->parent != NULL && flags == XlibHandleGlobal.ui_area_feet->parent->flags)
     {
         UIArea *ui_area0 = malloc(sizeof(*ui_area0));
-        ui_area0->data = NULL;
         UIArea *ptr = XlibHandleGlobal.ui_area_feet;
 
-        /*
-        while (ptr->next != NULL)
-            ptr = ptr->next;
-            */
-
         *ui_area0 = *ptr;
+        ui_area0->data = NULL;
         ui_area0->id = XlibHandleGlobal.ui_area_counts++;
         ui_area0->next = ptr->next;
         if (ptr->next)
@@ -1392,10 +1391,8 @@ void default_input(void)
     if (strncmp(XlibHandleGlobal.buffer_command + XlibHandleGlobal.buffer_command_size - 2, "lc", 2) == 0)
     {
         printf("lc - command\n");
-        /*
         if (XlibHandleGlobal.ui_area_feet->data)
             free(XlibHandleGlobal.ui_area_feet->data);
-            */
         XlibHandleGlobal.ui_area_feet->data = ui_calendar_create();
         XlibHandleGlobal.ui_area_feet->drawing_func = ui_calendar_draw_func;
         XlibHandleGlobal.ui_area_feet->key_input_func = ui_calendar_key_input_func;

@@ -3,7 +3,7 @@
 
 #define SPOOR_VERSION_MAJOR 0
 #define SPOOR_VERSION_MINOR 6
-#define SPOOR_VERSION_PATCH 3
+#define SPOOR_VERSION_PATCH 4
 
 typedef void SpoorObject;
 typedef void SpoorDatabase;
