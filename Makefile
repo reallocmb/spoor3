@@ -1,4 +1,4 @@
-program = spoor
+program = spoor3
 
 extern_lib = `pkg-config --cflags --libs freetype2` -lX11
 #extern_lib = -lraylibw -lopengl32 -lgdi32 -lwinmm
