@@ -181,7 +181,7 @@ void xlib_window_create(void)
                            XDefaultVisual(XlibHandleGlobal.display, 0),
                            CWOverrideRedirect,
                            &attributes);
-    XStoreName(XlibHandleGlobal.display, XlibHandleGlobal.window, "Test");
+    XStoreName(XlibHandleGlobal.display, XlibHandleGlobal.window, "SP00R3");
     XSelectInput(XlibHandleGlobal.display, XlibHandleGlobal.window,
                  KeyPressMask | KeyReleaseMask |
                  StructureNotifyMask | ExposureMask
